@@ -59,11 +59,14 @@ namespace CorpseLib.Web.OAuth
             URI oauthURL = URI.Build("https")
                 .Host(m_Host)
                 .Path(m_AuthorizePath)
-                .Query("response_type", "code")
-                .Query("client_id", publicKey)
-                .Query("redirect_uri", redirectURL.ToString())
-                .Query("scope", scopeString)
-                .Query("state", expectedState)
+                .Query(new URIQuery('&')
+                {
+                    { "response_type", "code" },
+                    { "client_id", publicKey },
+                    { "redirect_uri", redirectURL.ToString() },
+                    { "scope", scopeString },
+                    { "state", expectedState }
+                })
                 .Build();
             Process myProcess = new();
             myProcess.StartInfo.UseShellExecute = true;

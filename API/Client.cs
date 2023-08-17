@@ -1,5 +1,4 @@
-﻿using CorpseLib.Canal;
-using CorpseLib.Json;
+﻿using CorpseLib.Json;
 using CorpseLib.Network;
 using CorpseLib.Web.Http;
 
@@ -28,7 +27,8 @@ namespace CorpseLib.Web.API
         }
 
         private readonly TCPAsyncClient m_Client;
-        private readonly CanalManager<string> m_CanalManager = new();
+        private readonly Dictionary<string, Canal<APIEvent>> m_CanalManager = new();
+        //private readonly CanalManager<string> m_CanalManager = new();
         private string? m_ID = null;
         private readonly string m_Host;
         private readonly int m_Port;
@@ -57,7 +57,11 @@ namespace CorpseLib.Web.API
 
         internal void SetID(string id) => m_ID = id;
 
-        internal void Receive(string eventType, JNode data) => m_CanalManager.Emit(eventType, data);
+        internal void Receive(string eventType, JNode data)
+        {
+            if (m_CanalManager.TryGetValue(eventType, out Canal<APIEvent>? canal))
+                canal.Emit(new(eventType, data));
+        }
 
         private bool SubscriptionRequest(string path, string eventType, params string[] eventsType)
         {
@@ -71,13 +75,24 @@ namespace CorpseLib.Web.API
             return response.StatusCode == 200;
         }
 
+        private bool NewCanal(string eventType)
+        {
+            if (!m_CanalManager.ContainsKey(eventType))
+            {
+                Canal<APIEvent> newCanal = new();
+                m_CanalManager[eventType] = new();
+                return true;
+            }
+            return false;
+        }
+
         public bool Subscribe(string eventType, params string[] eventsType)
         {
             if (SubscriptionRequest("/subscribe", eventType, eventsType))
             {
-                m_CanalManager.NewCanal<JNode>(eventType);
+                m_CanalManager[eventType] = new();
                 foreach (string @event in eventsType)
-                    m_CanalManager.NewCanal<JNode>(@event);
+                    m_CanalManager[@event] = new();
                 return true;
             }
             return false;
@@ -87,15 +102,32 @@ namespace CorpseLib.Web.API
         {
             if (SubscriptionRequest("/unsubscribe", eventType, eventsType))
             {
-                m_CanalManager.DeleteCanal(eventType);
+                m_CanalManager.Remove(eventType);
                 foreach (string @event in eventsType)
-                    m_CanalManager.DeleteCanal(@event);
+                    m_CanalManager.Remove(@event);
                 return true;
             }
             return false;
         }
 
-        public bool Register(string eventType, Action<string, object?> listener) => m_CanalManager.Register<JNode>(eventType, listener);
-        public bool Unregister(string eventType, Action<string, object?> listener) => m_CanalManager.Unregister<JNode>(eventType, listener);
+        public bool Register(string eventType, Action<APIEvent?> listener)
+        {
+            if (m_CanalManager.TryGetValue(eventType, out Canal<APIEvent>? canal))
+            {
+                canal.Register(listener);
+                return true;
+            }
+            return false;
+        }
+
+        public bool Unregister(string eventType, Action<APIEvent?> listener)
+        {
+            if (m_CanalManager.TryGetValue(eventType, out Canal<APIEvent>? canal))
+            {
+                canal.Unregister(listener);
+                return true;
+            }
+            return false;
+        }
     }
 }

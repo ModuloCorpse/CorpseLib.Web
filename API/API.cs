@@ -1,5 +1,4 @@
-﻿using CorpseLib.Canal;
-using CorpseLib.Json;
+﻿using CorpseLib.Json;
 using CorpseLib.Network;
 using CorpseLib.Web.Http;
 using System.Collections.Concurrent;
@@ -28,7 +27,7 @@ namespace CorpseLib.Web.API
             protected override void OnWSClose(int status, string message) => m_API.UnregisterClient(m_ID);
         }
 
-        private readonly CanalManager<string> m_CanalManager = new();
+        private readonly Dictionary<string, Canal<APIEvent>> m_CanalManager = new();
         private readonly ConcurrentDictionary<string, HashSet<string>> m_Events = new();
         private readonly ConcurrentDictionary<string, APIProtocol> m_Clients = new();
         private readonly ConcurrentDictionary<string, Dictionary<Request.MethodType, MethodHandler>> m_APIEndpoints = new();
@@ -90,10 +89,12 @@ namespace CorpseLib.Web.API
 
         public bool NewEvent(string eventType)
         {
-            if (m_CanalManager.NewCanal<object>(eventType))
+            if (!m_CanalManager.ContainsKey(eventType))
             {
+                Canal<APIEvent> newCanal = new();
+                m_CanalManager[eventType] = newCanal;
                 m_Events[eventType] = new();
-                m_CanalManager.Register<object>(eventType, SendEvent);
+                newCanal.Register((APIEvent? @event) => SendEvent(@event!.Endpoint, @event!.Data));
                 return true;
             }
             return false;
@@ -110,14 +111,20 @@ namespace CorpseLib.Web.API
                 foreach (string websocketID in hashSet)
                 {
                     if (m_Clients.TryGetValue(websocketID, out APIProtocol? client))
-                    {
                         client.Send(msg);
-                    }
                 }
             }
         }
 
-        public bool Emit(string eventType, object args) => m_CanalManager.Emit(eventType, args);
+        public bool Emit(string eventType, object arg)
+        {
+            if (m_CanalManager.TryGetValue(eventType, out Canal<APIEvent>? canal))
+            {
+                canal.Emit(new(eventType, arg));
+                return true;
+            }
+            return false;
+        }
 
         private Response OnSubscribeRequest(Request request)
         {
