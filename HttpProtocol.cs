@@ -74,15 +74,18 @@ namespace CorpseLib.Web
         private OperationResult<object> ReadHTTP(BytesReader reader)
         {
             OperationResult<AMessage> message = reader.Read<AMessage>();
-            if (message && message.Result != null)
+            if (message)
             {
-                if (IsServerSide() && message.Result is Request request)
-                    return new(request);
-                else if (!IsServerSide() && message.Result is Response response)
-                    return new(response);
+                if (message.Result != null)
+                {
+                    if (IsServerSide() && message.Result is Request request)
+                        return new(request);
+                    else if (!IsServerSide() && message.Result is Response response)
+                        return new(response);
+                }
                 return new(null);
             }
-            return new("Error while deserializing received HTTP message", string.Empty);
+            return new(message.Error, message.Description);
         }
 
         protected override OperationResult<object> Read(BytesReader reader) => m_IsWebsocket ? reader.Read<Frame>().Cast<object>() : ReadHTTP(reader);

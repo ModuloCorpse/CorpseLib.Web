@@ -37,7 +37,6 @@
             m_StatusCode = statusCode;
             m_StatusMessage = statusMessage;
             SetBody(body);
-            base["Server"] = "Corpse HTTP Server";
             if (!string.IsNullOrWhiteSpace(body) && contentType != null)
             {
                 if (contentType.HaveParameter())

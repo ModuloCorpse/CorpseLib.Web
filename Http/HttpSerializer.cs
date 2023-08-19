@@ -3,92 +3,19 @@ using System.Text;
 
 namespace CorpseLib.Web.Http
 {
+    //TODO Debug chunked packet
     [DefaultSerializer]
     public class HttpSerializer : BytesSerializer<AMessage>
     {
-        private bool m_HoldMessage = false;
-        private bool m_IsHexa = true;
-        private int m_ChunkSize = 0;
-        private int m_CurrentChunkSize = 0;
-        private byte[] m_ChunkBuilder = Array.Empty<byte>();
-        private AMessage? m_HoldingMessage = null;
-
-        private string? HandleBodyRead(BytesReader reader)
-        {
-            while (reader.CanRead())
-            {
-                byte[] chunk;
-                int position = reader.IndexOf(new byte[] { 13, 10 });
-                while (position == 0)
-                {
-                    reader.ReadBytes(2);
-                    position = reader.IndexOf(new byte[] { 13, 10 });
-                }
-
-                if (position != -1)
-                    chunk = reader.ReadBytes(position);
-                else
-                    chunk = reader.ReadAll();
-                if (m_IsHexa)
-                {
-                    m_ChunkSize = int.Parse(Encoding.UTF8.GetString(chunk), System.Globalization.NumberStyles.HexNumber);
-                    if (m_ChunkSize == 0)
-                    {
-                        string bodyContent = Encoding.UTF8.GetString(m_ChunkBuilder);
-                        m_ChunkBuilder = Array.Empty<byte>();
-                        return bodyContent;
-                    }
-                    m_IsHexa = false;
-                }
-                else
-                {
-                    int chunkLength = chunk.Length;
-                    m_CurrentChunkSize += chunkLength;
-                    int chunkBuilderLength = m_ChunkBuilder.Length;
-                    Array.Resize(ref m_ChunkBuilder, chunkBuilderLength + chunkLength);
-                    for (int i = 0; i < chunkLength; ++i)
-                        m_ChunkBuilder[i + chunkBuilderLength] = chunk[i];
-                    if (m_ChunkSize == m_CurrentChunkSize)
-                    {
-                        m_CurrentChunkSize = 0;
-                        m_IsHexa = true;
-                    }
-                }
-            }
-            return null;
-        }
-
-        private OperationResult<AMessage> HandleHoldMessageBodyRead(BytesReader reader)
-        {
-            string? body = HandleBodyRead(reader);
-            if (body != null)
-            {
-                m_HoldMessage = false;
-                m_HoldingMessage!.SetBody(body);
-                return new(m_HoldingMessage);
-            }
-            return new(null);
-        }
+        private readonly ChunkedMessageBuilder m_ChunkedMessageBuilder = new();
+        private readonly MessageBuilder m_MessageBuilder = new();
 
         private OperationResult<AMessage> HandleMessage(AMessage message, BytesReader reader)
         {
             if (message.HaveHeaderField("Transfer-Encoding") && ((string)message["Transfer-Encoding"]).ToLower().Contains("chunked"))
-            {
-                string? body = HandleBodyRead(reader);
-                if (body != null)
-                {
-                    message.SetBody(body);
-                    return new(message);
-                }
-                m_HoldMessage = true;
-                m_HoldingMessage = message;
-                return new(null);
-            }
+                return m_ChunkedMessageBuilder.HandleMessage(message, reader);
             else if (message.HaveHeaderField("Content-Length"))
-            {
-                message.SetBody(reader.ReadString(int.Parse((string)message["Content-Length"])));
-                return new(message);
-            }
+                return m_MessageBuilder.HandleMessage(message, reader);
             else
                 return new(message);
         }
@@ -99,8 +26,10 @@ namespace CorpseLib.Web.Http
                 reader.ReadBytes(2);
             if (!reader.CanRead())
                 return new(null);
-            if (m_HoldMessage)
-                return HandleHoldMessageBodyRead(reader);
+            if (m_ChunkedMessageBuilder.IsHoldingMessage)
+                return m_ChunkedMessageBuilder.HandleHeldMessage(reader);
+            if (m_MessageBuilder.IsHoldingMessage)
+                return m_MessageBuilder.HandleHeldMessage(reader);
             int position = reader.IndexOf(new byte[] { 13, 10, 13, 10 });
             if (position >= 0)
             {

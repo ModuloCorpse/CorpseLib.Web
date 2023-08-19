@@ -17,7 +17,8 @@ namespace CorpseLib.Web.OAuth
 
         public event RefreshEventHandler? Refreshed;
 
-        internal RefreshToken(URI url, string[] scopes, string publicKey, string secret, string token, string redirectURI)
+        //TODO Make it internal
+        public RefreshToken(URI url, string[] scopes, string publicKey, string secret, string token, string redirectURI)
         {
             m_OAuthURL = url;
             m_Scopes = scopes;
@@ -31,33 +32,21 @@ namespace CorpseLib.Web.OAuth
 
         private void GetAccessToken(string request)
         {
-            Request oauthRequest = new(Request.MethodType.POST, m_OAuthURL.Path, request);
-            oauthRequest["Content-Type"] = "application/x-www-form-urlencoded";
-            TCPSyncClient oauthClient = new(new HttpProtocol(), m_OAuthURL);
-            if (oauthClient.Connect())
+            URLRequest oauthRequest = new(m_OAuthURL, Request.MethodType.POST, request);
+            oauthRequest.AddContentType(MIME.APPLICATION.X_WWW_FORM_URLENCODED);
+            Response oauthResponse = oauthRequest.Send();
+            string responseJsonStr = oauthResponse.Body;
+            if (string.IsNullOrWhiteSpace(responseJsonStr))
+                return;
+            JFile responseJson = new(responseJsonStr);
+            List<string> scope = responseJson.GetList<string>("scope");
+            if (responseJson.TryGet("access_token", out string? access_token) &&
+                responseJson.TryGet("refresh_token", out string? refresh_token) &&
+                responseJson.TryGet("token_type", out string? token_type) && token_type! == "bearer" &&
+                m_Scopes.All(item => scope.Contains(item)) && scope.All(item => m_Scopes.Contains(item)))
             {
-                oauthClient.Send(oauthRequest);
-                List<object> packets = oauthClient.Read();
-                foreach (object packet in packets)
-                {
-                    if (packet is Response oauthResponse)
-                    {
-                        string responseJsonStr = oauthResponse.Body;
-                        if (string.IsNullOrWhiteSpace(responseJsonStr))
-                            return;
-                        JFile responseJson = new(responseJsonStr);
-                        List<string> scope = responseJson.GetList<string>("scope");
-                        if (responseJson.TryGet("access_token", out string? access_token) &&
-                            responseJson.TryGet("refresh_token", out string? refresh_token) &&
-                            responseJson.TryGet("token_type", out string? token_type) && token_type! == "bearer" &&
-                            m_Scopes.All(item => scope.Contains(item)) && scope.All(item => m_Scopes.Contains(item)))
-                        {
-                            m_RefreshToken = refresh_token!;
-                            m_AccessToken = access_token!;
-                            return;
-                        }
-                    }
-                }
+                m_RefreshToken = refresh_token!;
+                m_AccessToken = access_token!;
             }
         }
 

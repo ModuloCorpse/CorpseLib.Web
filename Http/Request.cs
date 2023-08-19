@@ -1,4 +1,7 @@
-﻿namespace CorpseLib.Web.Http
+﻿using CorpseLib.Network;
+using System.Text;
+
+namespace CorpseLib.Web.Http
 {
     /// <summary>
     /// An HTTP request
@@ -20,9 +23,9 @@
         }
 
         private readonly MethodType m_Method;
+        private readonly URIQuery? m_Parameters = null;
         private readonly string m_Path;
         private readonly string m_Version;
-        private readonly Dictionary<string, string> m_Parameters = new();
 
         /// <summary>
         /// Constructor
@@ -57,13 +60,7 @@
             {
                 m_Path = path[..parametersIdx];
                 string parameterLine = path[(parametersIdx + 1)..];
-                string[] parameters = parameterLine.Split('&');
-                foreach (string parameter in parameters)
-                {
-                    string[] tmp = parameter.Split('=');
-                    if (tmp.Length == 2)
-                        m_Parameters[tmp[0]] = tmp[1];
-                }
+                m_Parameters = new(parameterLine, new char[] { '&' });
             }
 
             if (m_Path[^1] == '/')
@@ -84,17 +81,27 @@
             SetBody(body);
         }
 
+        private string GetHeaderPath()
+        {
+            if (m_Parameters == null)
+                return m_Path;
+            StringBuilder sb = new();
+            sb.Append(m_Path);
+            sb.Append(m_Parameters);
+            return sb.ToString();
+        }
+
         protected override string GetHeader() => m_Method switch
         {
-            MethodType.GET => string.Format("GET {0} {1}", m_Path, m_Version),
-            MethodType.HEAD => string.Format("HEAD {0} {1}", m_Path, m_Version),
-            MethodType.POST => string.Format("POST {0} {1}", m_Path, m_Version),
-            MethodType.PUT => string.Format("PUT {0} {1}", m_Path, m_Version),
-            MethodType.DELETE => string.Format("DELETE {0} {1}", m_Path, m_Version),
-            MethodType.CONNECT => string.Format("CONNECT {0} {1}", m_Path, m_Version),
-            MethodType.OPTIONS => string.Format("OPTIONS {0} {1}", m_Path, m_Version),
-            MethodType.TRACE => string.Format("TRACE {0} {1}", m_Path, m_Version),
-            MethodType.PATCH => string.Format("PATCH {0} {1}", m_Path, m_Version),
+            MethodType.GET => string.Format("GET {0} {1}", GetHeaderPath(), m_Version),
+            MethodType.HEAD => string.Format("HEAD {0} {1}", GetHeaderPath(), m_Version),
+            MethodType.POST => string.Format("POST {0} {1}", GetHeaderPath(), m_Version),
+            MethodType.PUT => string.Format("PUT {0} {1}", GetHeaderPath(), m_Version),
+            MethodType.DELETE => string.Format("DELETE {0} {1}", GetHeaderPath(), m_Version),
+            MethodType.CONNECT => string.Format("CONNECT {0} {1}", GetHeaderPath(), m_Version),
+            MethodType.OPTIONS => string.Format("OPTIONS {0} {1}", GetHeaderPath(), m_Version),
+            MethodType.TRACE => string.Format("TRACE {0} {1}", GetHeaderPath(), m_Version),
+            MethodType.PATCH => string.Format("PATCH {0} {1}", GetHeaderPath(), m_Version),
             _ => throw new ArgumentException()
         };
         /// <summary>
@@ -102,14 +109,14 @@
         /// </summary>
         /// <param name="parameterName">Name of the URL parameter to search</param>
         /// <returns>True if the URL parameter exists</returns>
-        public bool HaveParameter(string parameterName) { return m_Parameters.ContainsKey(parameterName); }
+        public bool HaveParameter(string parameterName) => m_Parameters?.HaveData(parameterName) ?? false;
 
         /// <summary>
         /// Get the URL parameter value of the given parameter
         /// </summary>
         /// <param name="parameterName">Name of the URL parameter to search</param>
         /// <returns>The value of the URL parameter</returns>
-        public string GetParameter(string parameterName) { return m_Parameters[parameterName]; }
+        public string GetParameter(string parameterName) => m_Parameters?[parameterName] ?? string.Empty;
 
         /// <summary>
         /// Get the URL parameter value of the given parameter if it exist
@@ -119,7 +126,13 @@
         /// <returns>True if it found a value to the given parameter</returns>
         public bool TryGetParameter(string parameterName, out string? value)
         {
-            return m_Parameters.TryGetValue(parameterName, out value);
+            if (m_Parameters != null && m_Parameters.HaveData(parameterName))
+            {
+                value = m_Parameters[parameterName];
+                return true;
+            }
+            value = null;
+            return false;
         }
 
         /// <summary>

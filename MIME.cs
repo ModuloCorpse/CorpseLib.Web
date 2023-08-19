@@ -119,6 +119,10 @@
             /// application/ogg
             /// </summary>
             public static readonly MIME OGG = new("application", "ogg");
+            /// <summary>
+            /// application/ogg
+            /// </summary>
+            public static readonly MIME X_WWW_FORM_URLENCODED = new ("application", "x-www-form-urlencoded");
         }
 
         /// <summary>
