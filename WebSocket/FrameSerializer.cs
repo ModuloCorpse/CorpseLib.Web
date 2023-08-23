@@ -2,8 +2,7 @@
 
 namespace CorpseLib.Web.WebSocket
 {
-    [DefaultSerializer]
-    public class FrameSerializer : BytesSerializer<Frame>
+    public class FrameSerializer : ABytesSerializer<Frame>
     {
         protected override OperationResult<Frame> Deserialize(BytesReader reader)
         {

@@ -1,11 +1,8 @@
 ﻿using CorpseLib.Serialize;
-using System.Text;
 
 namespace CorpseLib.Web.Http
 {
-    //TODO Debug chunked packet
-    [DefaultSerializer]
-    public class HttpSerializer : BytesSerializer<AMessage>
+    public class HttpSerializer : ABytesSerializer<AMessage>
     {
         private readonly ChunkedMessageBuilder m_ChunkedMessageBuilder = new();
         private readonly MessageBuilder m_MessageBuilder = new();

@@ -231,5 +231,11 @@ namespace CorpseLib.Web
         protected virtual void OnWSOpen(Response message) { }
         protected virtual void OnWSClose(int status, string message) { }
         protected virtual void OnWSMessage(string message) { }
+
+        protected override void SetupSerializer(ref BytesSerializer serializer)
+        {
+            serializer.Register(new HttpSerializer());
+            serializer.Register(new FrameSerializer());
+        }
     }
 }
