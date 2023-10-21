@@ -17,6 +17,13 @@ namespace CorpseLib.Web
                 SendWebSocketHandshake();
         }
 
+        protected override void OnClientReconnected()
+        {
+            base.OnClientReconnected();
+            if (!IsServerSide())
+                SendWebSocketHandshake();
+        }
+
         protected sealed override void OnHTTPRequest(Request request) { }
 
         protected sealed override void OnHTTPResponse(Response response)

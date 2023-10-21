@@ -6,17 +6,9 @@ namespace CorpseLib.Web.OAuth
 {
     public class Authenticator
     {
-        private TaskCompletionSource<OperationResult<RefreshToken>> m_TokenTask = new TaskCompletionSource<OperationResult<RefreshToken>>();
-        private string m_PageContent = string.Empty;
-        private readonly string m_Host;
-        private readonly string m_AuthorizePath = "/oauth2/authorize";
-        private readonly string m_TokenPath = "/oauth2/token";
-        private readonly string m_RedirectPath = "/oauth_authenticate";
-        private readonly int m_RedirectPort = 80;
-
         private class AuthenticatorClientProtocol : HttpProtocol
         {
-            private readonly Authenticator m_Authenticator;
+            private readonly Operation<RefreshToken> m_TokenOperation;
             private readonly URI m_RedirectURL;
             private readonly string[] m_ExpectedScope;
             private readonly string m_PublicKey;
@@ -26,9 +18,9 @@ namespace CorpseLib.Web.OAuth
             private readonly string m_ExpectedState;
             private readonly string m_TokenPath;
 
-            public AuthenticatorClientProtocol(Authenticator authenticator, URI redirectURL, string[] expectedScope, string publicKey, string privateKey, string pageContent, string host, string expectedState, string tokenPath)
+            public AuthenticatorClientProtocol(Operation<RefreshToken> tokenOperation, URI redirectURL, string[] expectedScope, string publicKey, string privateKey, string pageContent, string host, string expectedState, string tokenPath)
             {
-                m_Authenticator = authenticator;
+                m_TokenOperation = tokenOperation;
                 m_RedirectURL = redirectURL;
                 m_ExpectedScope = expectedScope;
                 m_PublicKey = publicKey;
@@ -54,18 +46,18 @@ namespace CorpseLib.Web.OAuth
                                 if (request.TryGetParameter("scope", out string? scope))
                                     scopes.AddRange(scope!.Replace("%3A", ":").Split('+'));
                                 if (request.TryGetParameter("code", out string? token) && m_ExpectedScope.All(item => scopes.Contains(item)) && scopes.All(item => m_ExpectedScope.Contains(item)))
-                                    m_Authenticator.SetRefreshToken(new(new(URI.Build("https").Host(m_Host).Port(443).Path(m_TokenPath).Build(), m_ExpectedScope, m_PublicKey, m_PrivateKey, token!, m_RedirectURL.ToString())));
+                                    m_TokenOperation.SetResult(new(URI.Build("https").Host(m_Host).Port(443).Path(m_TokenPath).Build(), m_ExpectedScope, m_PublicKey, m_PrivateKey, token!, m_RedirectURL.ToString()));
                                 else if (request.TryGetParameter("error", out string? error))
                                 {
                                     if (request.TryGetParameter("error_description", out string? errorDescription))
-                                        m_Authenticator.SetRefreshToken(new(error!, errorDescription!.Replace('+', ' ')));
+                                        m_TokenOperation.SetError(error!, errorDescription!.Replace('+', ' '));
                                     else
-                                        m_Authenticator.SetRefreshToken(new(error!, string.Empty));
+                                        m_TokenOperation.SetError(error!, string.Empty);
                                 }
                             }
                         }
                         else
-                            m_Authenticator.SetRefreshToken(new("Bad response", "Received request didn't have the good state"));
+                            m_TokenOperation.SetError("Bad response", "Received request didn't have the good state");
                     }
                     else
                         Send(new Response(404, "Not Found"));
@@ -74,6 +66,14 @@ namespace CorpseLib.Web.OAuth
                     Send(new Response(405, "Method Not Allowed"));
             }
         }
+
+        private Operation<RefreshToken> m_TokenOperation = new();
+        private string m_PageContent = string.Empty;
+        private readonly string m_Host;
+        private readonly string m_AuthorizePath = "/oauth2/authorize";
+        private readonly string m_TokenPath = "/oauth2/token";
+        private readonly string m_RedirectPath = "/oauth_authenticate";
+        private readonly int m_RedirectPort = 80;
 
         public Authenticator(string host) => m_Host = host;
 
@@ -116,11 +116,9 @@ namespace CorpseLib.Web.OAuth
 
         public void SetPageContent(string content) => m_PageContent = content;
 
-        internal void SetRefreshToken(OperationResult<RefreshToken> result) => m_TokenTask.SetResult(result);
-
         public OperationResult<RefreshToken> AuthorizationCode(string[] expectedScope, string publicKey, string privateKey, string browser = "")
         {
-            m_TokenTask = new TaskCompletionSource<OperationResult<RefreshToken>>();
+            m_TokenOperation = new();
             URI redirectURL = URI.Build("http").Host("localhost").Port(m_RedirectPort).Path(m_RedirectPath).Build();
             string expectedState = Guid.NewGuid().ToString();
             string scopeString = string.Join('+', expectedScope).Replace(":", "%3A");
@@ -146,11 +144,11 @@ namespace CorpseLib.Web.OAuth
                 myProcess.StartInfo.Arguments = oauthURL.ToString();
             }
             myProcess.Start();
-            TCPAsyncServer httpServer = new(() => new AuthenticatorClientProtocol(this, redirectURL, expectedScope, publicKey, privateKey, m_PageContent, m_Host, expectedState, m_TokenPath), redirectURL.Port);
+            TCPAsyncServer httpServer = new(() => new AuthenticatorClientProtocol(m_TokenOperation, redirectURL, expectedScope, publicKey, privateKey, m_PageContent, m_Host, expectedState, m_TokenPath), redirectURL.Port);
             httpServer.Start();
-            m_TokenTask.Task.Wait();
+            m_TokenOperation.Wait();
             httpServer.Stop();
-            return m_TokenTask.Task.Result;
+            return m_TokenOperation.Result;
         }
     }
 }

@@ -179,7 +179,7 @@ namespace CorpseLib.Web
             }
         }
 
-        protected override void OnClientConnected()
+        private void HandleSSLConnection()
         {
             URI url = GetURL();
             if (IsServerSide())
@@ -203,6 +203,16 @@ namespace CorpseLib.Web
                 sslStream.AuthenticateAsClientAsync(options, CancellationToken.None).Wait();
                 SetStream(sslStream);
             }
+        }
+
+        protected override void OnClientConnected() => HandleSSLConnection();
+
+        protected override void OnClientReconnected() => HandleSSLConnection();
+
+        protected override void OnClientReset()
+        {
+            m_IsWebsocket = false;
+            m_Builder.Clear();
         }
 
         protected override void OnClientDisconnected() {}

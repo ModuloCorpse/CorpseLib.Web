@@ -31,7 +31,7 @@ namespace CorpseLib.Web
 
         public void AddContentType(MIME mime) => m_RequestHeaderFields["Content-Type"] = mime.ToString();
 
-        public void AddRefreshToken(RefreshToken token)
+        public void AddRefreshToken(Token token)
         {
             m_RequestHeaderFields["Authorization"] = string.Format("Bearer {0}", token.AccessToken);
             m_RequestHeaderFields["Client-Id"] = token.ClientID;
@@ -73,6 +73,19 @@ namespace CorpseLib.Web
                 } while (packets.Count == 0);
             }
             return new(503, "Service Unavailable", "Cannot connect to the server");
+        }
+
+        public bool SendWithoutResponse() => SendWithoutResponse(TimeSpan.FromSeconds(60));
+
+        public bool SendWithoutResponse(TimeSpan timeout)
+        {
+            TCPSyncClient client = new(new HttpProtocol(), m_URL);
+            if (client.Connect())
+            {
+                client.Send(Request);
+                return true;
+            }
+            return false;
         }
     }
 }

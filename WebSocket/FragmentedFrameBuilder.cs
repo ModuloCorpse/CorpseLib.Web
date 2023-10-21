@@ -4,6 +4,8 @@
     {
         private readonly List<Frame> m_Frames = new();
 
+        public void Clear() => m_Frames.Clear();
+
         public Frame? BuildFrame(Frame frame)
         {
             int frameOpCode = frame.GetOpCode();
