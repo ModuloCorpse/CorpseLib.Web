@@ -16,10 +16,13 @@
         public Response(string response)
         {
             List<string> attributes = response.Split(new string[] { "\r\n" }, StringSplitOptions.None).ToList();
-            string[] statusLine = attributes[0].Trim().Split(' ');
-            m_Version = statusLine[0];
-            m_StatusCode = int.Parse(statusLine[1]);
-            m_StatusMessage = statusLine[2];
+            string statusLine = attributes[0].Trim();
+            int indexOfSeparator = statusLine.IndexOf(' ');
+            m_Version = statusLine[..indexOfSeparator];
+            statusLine = statusLine[(indexOfSeparator + 1)..];
+            indexOfSeparator = statusLine.IndexOf(' ');
+            m_StatusCode = int.Parse(statusLine[..indexOfSeparator]);
+            m_StatusMessage = statusLine[(indexOfSeparator + 1)..];
             attributes.RemoveAt(0);
             ParseHeaderFields(attributes);
         }
