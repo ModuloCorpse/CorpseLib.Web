@@ -1,10 +1,9 @@
 ﻿using CorpseLib.Json;
 using CorpseLib.Network;
-using CorpseLib.Web.Http;
 
 namespace CorpseLib.Web.API.Event
 {
-    public class EventClient
+    public class EventClient : WebSocketProtocol
     {
         private class EventAPIClientProtocol : WebSocketProtocol
         {
@@ -15,13 +14,30 @@ namespace CorpseLib.Web.API.Event
             protected override void OnWSMessage(string message)
             {
                 JFile json = new(message);
-                if (json.TryGet("id", out string? id))
-                    m_Client.SetID(id!);
-                else
+                if (json.TryGet("type", out string? type))
                 {
-                    JNode? node = json.Get("data");
-                    if (node != null && json.TryGet("type", out string? type))
-                        m_Client.Receive(type!, node);
+                    switch (type)
+                    {
+                        case "subscribed":
+                        {
+                            if (json.TryGet("event", out string? @event))
+                                m_Client.Subsribed(@event!);
+                            break;
+                        }
+                        case "unsubscribed":
+                        {
+                            if (json.TryGet("event", out string? @event))
+                                m_Client.Unsubsribed(@event!);
+                            break;
+                        }
+                        case "event":
+                        {
+                            JNode? node = json.Get("data");
+                            if (node != null && json.TryGet("event", out string? @event))
+                                m_Client.Receive(@event!, node);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -67,43 +83,60 @@ namespace CorpseLib.Web.API.Event
             }
         }
 
-        private readonly TCPAsyncClient m_Client;
+        private readonly Dictionary<string, IEventCanalWrapper> m_AwaitingWrapper = new();
         private readonly Dictionary<string, IEventCanalWrapper> m_CanalManager = new();
-        private string? m_ID = null;
-        private readonly string m_Host;
-        private readonly int m_Port;
-        private readonly bool m_IsSecured;
 
-        public EventClient(string host, int port, bool isSecured = false)
+        public static EventClient NewClient(string host, int port, bool isSecured = false)
         {
-            m_Host = host;
-            m_Port = port;
-            m_IsSecured = isSecured;
-            m_Client = new(new EventAPIClientProtocol(this), URI.Build(m_IsSecured ? "wss" : "ws").Host(m_Host).Port(m_Port).Build());
+            EventClient eventClient = new();
+            TCPAsyncClient client = new(eventClient, URI.Build(isSecured ? "wss" : "ws").Host(host).Port(port).Build());
+            client.Start();
+            return eventClient;
         }
 
-        public EventClient(string host, int port, string path, bool isSecured = false)
+        public static EventClient NewClient(string host, int port, string path, bool isSecured = false)
         {
-            m_Host = host;
-            m_Port = port;
-            m_IsSecured = isSecured;
-            m_Client = new(new EventAPIClientProtocol(this), URI.Build(m_IsSecured ? "wss" : "ws").Host(m_Host).Port(m_Port).Path(path).Build());
+            EventClient eventClient = new();
+            TCPAsyncClient client = new(eventClient, URI.Build(isSecured ? "wss" : "ws").Host(host).Port(port).Path(path).Build());
+            client.Start();
+            return eventClient;
         }
 
-        public bool Connect()
+        protected override void OnWSMessage(string message)
         {
-            if (m_Client.Start())
+            JFile json = new(message);
+            if (json.TryGet("type", out string? type))
             {
-                while (m_ID == null)
-                    Thread.Sleep(100);
-                return true;
+                switch (type)
+                {
+                    case "error":
+                    {
+                        if (json.TryGet("event", out string? @event))
+                            m_AwaitingWrapper.Remove(@event!);
+                        break;
+                    }
+                    case "subscribed":
+                    {
+                        if (json.TryGet("event", out string? @event))
+                            Subsribed(@event!);
+                        break;
+                    }
+                    case "unsubscribed":
+                    {
+                        if (json.TryGet("event", out string? @event))
+                            Unsubsribed(@event!);
+                        break;
+                    }
+                    case "event":
+                    {
+                        JNode? node = json.Get("data");
+                        if (node != null && json.TryGet("event", out string? @event))
+                            Receive(@event!, node);
+                        break;
+                    }
+                }
             }
-            return false;
         }
-
-        public void Disconnect() => m_Client.Disconnect();
-
-        internal void SetID(string id) => m_ID = id;
 
         internal void Receive(string eventType, JNode data)
         {
@@ -111,55 +144,25 @@ namespace CorpseLib.Web.API.Event
                 canalWrapper.Emit(data);
         }
 
-        private bool SubscriptionRequest(string path, string eventType, params string[] eventsType)
+        internal void Subsribed(string eventType)
         {
-            if (m_ID == null)
-                return false;
-            URI url = URI.Build(m_IsSecured ? "https" : "http").Host(m_Host).Port(m_Port).Path(path).Build();
-            List<string> events = new() { eventType };
-            events.AddRange(eventsType);
-            URLRequest request = new(url, Request.MethodType.POST, new JObject() { { "ws", m_ID }, { "events", events } });
-            Response response = request.Send();
-            return response.StatusCode == 200;
+            if (m_AwaitingWrapper.TryGetValue(eventType, out IEventCanalWrapper? wrapper))
+            {
+                m_CanalManager[eventType] = wrapper;
+                m_AwaitingWrapper.Remove(eventType);
+            }
         }
 
-        public bool Subscribe(Canal canal, string eventType, params string[] eventsType) => Subscribe("/subscribe", canal, eventType, eventsType);
-        public bool Subscribe(string path, Canal canal, string eventType, params string[] eventsType)
+        private void Subscribe(string eventType, IEventCanalWrapper wrapper)
         {
-            if (SubscriptionRequest(path, eventType, eventsType))
-            {
-                m_CanalManager[eventType] = new EventCanalWrapper(canal);
-                foreach (string @event in eventsType)
-                    m_CanalManager[@event] = new EventCanalWrapper(canal);
-                return true;
-            }
-            return false;
+            m_AwaitingWrapper[eventType] = wrapper;
+            Send(new JObject() { { "request", "subscribe" }, { "event", eventType } }.ToNetworkString());
         }
 
-        public bool Subscribe<T>(Canal<T> canal, string eventType, params string[] eventsType) => Subscribe<T>("/subscribe", canal, eventType, eventsType);
-        public bool Subscribe<T>(string path, Canal<T> canal, string eventType, params string[] eventsType)
-        {
-            if (SubscriptionRequest(path, eventType, eventsType))
-            {
-                m_CanalManager[eventType] = new EventCanalWrapper<T>(canal);
-                foreach (string @event in eventsType)
-                    m_CanalManager[@event] = new EventCanalWrapper<T>(canal);
-                return true;
-            }
-            return false;
-        }
+        public void Subscribe(Canal canal, string eventType) => Subscribe(eventType, new EventCanalWrapper(canal));
+        public void Subscribe<T>(Canal<T> canal, string eventType) => Subscribe(eventType, new EventCanalWrapper<T>(canal));
 
-        public bool Unsubscribe(string eventType, params string[] eventsType) => UnsubscribeFromPath("/unsubscribe", eventType, eventsType);
-        public bool UnsubscribeFromPath(string path, string eventType, params string[] eventsType)
-        {
-            if (SubscriptionRequest(path, eventType, eventsType))
-            {
-                m_CanalManager.Remove(eventType);
-                foreach (string @event in eventsType)
-                    m_CanalManager.Remove(@event);
-                return true;
-            }
-            return false;
-        }
+        private void Unsubsribed(string eventType) => m_CanalManager.Remove(eventType);
+        public void Unubscribe(string eventType) => Send(new JObject() { { "request", "unsubscribe" }, { "event", eventType } }.ToNetworkString());
     }
 }
