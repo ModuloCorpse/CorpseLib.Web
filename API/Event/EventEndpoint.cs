@@ -1,4 +1,5 @@
 ﻿using CorpseLib.Json;
+using CorpseLib.ManagedObject;
 using System.Collections.Concurrent;
 
 namespace CorpseLib.Web.API.Event
@@ -23,15 +24,7 @@ namespace CorpseLib.Web.API.Event
             public bool UnregisterClient(string clientID) => m_RegisteredClients.Remove(clientID);
             public bool IsRegistered(string clientID) => m_RegisteredClients.Contains(clientID);
 
-            protected void Emit(JObject eventData)
-            {
-                string msg = eventData.ToNetworkString();
-                foreach (string websocketID in m_RegisteredClients)
-                {
-                    if (m_Manager.Clients.TryGetValue(websocketID, out API.APIProtocol? client))
-                        client.Send(msg);
-                }
-            }
+            protected void Emit(string type, JObject eventData) => m_Manager.SendEvent(m_RegisteredClients.ToArray(), type, eventData);
         }
 
         private class EventHandler : AEventHandler
@@ -41,7 +34,7 @@ namespace CorpseLib.Web.API.Event
             public void RegisterToCanal(Canal canal) => canal.Register(Trigger);
             public void UnregisterFromCanal(Canal canal) => canal.Unregister(Trigger);
 
-            public void Trigger() => Emit(new JObject() { { "type", "event" }, { "event", EventType }, { "data", new JObject() } });
+            public void Trigger() => Emit("event", new JObject() { { "event", EventType }, { "data", new JObject() } });
         }
 
         private class EventHandler<T> : AEventHandler
@@ -54,9 +47,9 @@ namespace CorpseLib.Web.API.Event
             public void Emit(T? data)
             {
                 if (data == null)
-                    Emit(new JObject() { { "type", "event" }, { "event", EventType }, { "data", new JObject() } });
+                    Emit("event", new JObject() { { "event", EventType }, { "data", new JObject() } });
                 else
-                    Emit(new JObject() { { "type", "event" }, { "event", EventType }, { "data", data } });
+                    Emit("event", new JObject() { { "event", EventType }, { "data", data } });
             }
         }
 
@@ -65,19 +58,30 @@ namespace CorpseLib.Web.API.Event
 
         public EventEndpoint() : base("/event") { }
         public EventEndpoint(string path) : base(path) { }
+        public EventEndpoint(string path, bool needExactPath) : base(path, needExactPath) { }
 
-        internal ConcurrentDictionary<string, API.APIProtocol> Clients => m_Clients;
-
-        internal bool IsClientRegisteredToEvent(string id, string eventType)
+        protected static void SendEvent(API.APIProtocol client, string type, JObject data)
         {
-            if (m_Events.TryGetValue(eventType, out AEventHandler? value))
-                return value.IsRegistered(id);
-            return false;
+            client.Send(new JObject() { { "type", type }, { "data", data } }.ToNetworkString());
         }
 
-        internal bool IsClientConnected(string id) => m_Clients.ContainsKey(id);
+        protected void SendEvent(string id, string type, JObject data)
+        {
+            if (m_Clients.TryGetValue(id, out API.APIProtocol? client))
+                client.Send(new JObject() { { "type", type }, { "data", data } }.ToNetworkString());
+        }
 
-        protected override void OnClientRegistered(API.APIProtocol client) => m_Clients[client.ID] = client;
+        protected void SendEvent(string[] ids, string type, JObject data)
+        {
+            string msg = new JObject() { { "type", type }, { "data", data } }.ToNetworkString();
+            foreach (string id in ids)
+            {
+                if (m_Clients.TryGetValue(id, out API.APIProtocol? client))
+                    client.Send(msg);
+            }
+        }
+
+        protected override void OnClientRegistered(API.APIProtocol client, string path) => m_Clients[client.ID] = client;
 
         protected override void OnClientUnregistered(string id)
         {
@@ -104,42 +108,47 @@ namespace CorpseLib.Web.API.Event
                                     if (request[0] == 's')
                                     {
                                         handler.RegisterClient(id);
-                                        client.Send(new JObject() { { "type", "subscribed" }, { "event", eventType } }.ToNetworkString());
+                                        SendEvent(client, "subscribed", new JObject() { { "event", eventType } });
                                         return;
                                     }
                                     else
                                     {
                                         handler.UnregisterClient(id);
-                                        client.Send(new JObject() { { "type", "unsubscribed" }, { "event", eventType } }.ToNetworkString());
+                                        SendEvent(client, "unsubscribed", new JObject() { { "event", eventType } });
                                         return;
                                     }
                                 }
                                 else
                                 {
-                                    client.Send(new JObject() { { "type", "error" }, { "error", string.Format("Unknown event {0}", eventType) }, { "event", eventType } }.ToNetworkString());
+                                    SendEvent(client, "error", new JObject() { { "error", string.Format("Unknown event {0}", eventType) }, { "event", eventType } });
                                     return;
                                 }
                             }
                             else
                             {
-                                client.Send(new JObject() { { "type", "error" }, { "error", "No 'event' given" } }.ToNetworkString());
+                                SendEvent(client, "error", new JObject() { { "error", "No 'event' given" } });
                                 return;
                             }
                         }
                         else
                         {
-                            client.Send(new JObject() { { "type", "error" }, { "error", string.Format("Unknown request {0}", request) } }.ToNetworkString());
+                            OnUnknownRequest(client!, request!, json);
                             return;
                         }
                     }
                     else
                     {
-                        client.Send(new JObject() { { "type", "error" }, { "error", "No 'request' given" } }.ToNetworkString());
+                        SendEvent(client, "error", new JObject() { { "error", "No 'request' given" } });
                         return;
                     }
                 }
                 catch { }
             }
+        }
+
+        protected virtual void OnUnknownRequest(API.APIProtocol client, string request, JFile json)
+        {
+            SendEvent(client, "error", new JObject() { { "error", string.Format("Unknown request {0}", request) } });
         }
 
         public bool HaveEvent(string eventType) => m_Events.ContainsKey(eventType);

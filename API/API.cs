@@ -76,7 +76,7 @@ namespace CorpseLib.Web.API
             AWebsocketEndpoint? websocketEndpoint = m_WebsocketEndpointTree.GetEndpoint(request.Path);
             if (websocketEndpoint != null)
             {
-                websocketEndpoint.RegisterClient(client);
+                websocketEndpoint.RegisterClient(client, request.Path);
                 m_ClientEndpoint[client.ID] = websocketEndpoint;
             }
         }
