@@ -8,7 +8,7 @@ namespace CorpseLib.Web
     public class URLRequest
     {
         private readonly URI m_URL;
-        private readonly Dictionary<string, string> m_RequestHeaderFields = new();
+        private readonly Dictionary<string, string> m_RequestHeaderFields = [];
         private readonly Request.MethodType m_Method = Request.MethodType.GET;
         private readonly string m_Content = string.Empty;
 
@@ -80,6 +80,7 @@ namespace CorpseLib.Web
         public bool SendWithoutResponse(TimeSpan timeout)
         {
             TCPSyncClient client = new(new HttpProtocol(), m_URL);
+            client.SetReadTimeout((int)timeout.TotalMilliseconds);
             if (client.Connect())
             {
                 client.Send(Request);

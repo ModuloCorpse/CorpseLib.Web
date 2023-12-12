@@ -17,7 +17,7 @@ namespace CorpseLib.Web.Http
         /// <param name="response">Content of the received HTTP response</param>
         public Response(string response)
         {
-            List<string> attributes = response.Split(new string[] { "\r\n" }, StringSplitOptions.None).ToList();
+            List<string> attributes = [.. response.Split(separator, StringSplitOptions.None)];
             string statusLine = attributes[0].Trim();
             int indexOfSeparator = statusLine.IndexOf(' ');
             m_Version = statusLine[..indexOfSeparator];
@@ -105,5 +105,7 @@ namespace CorpseLib.Web.Http
         /// Status message of the response
         /// </summary>
         public string StatusMessage { get => m_StatusMessage; }
+
+        private static readonly string[] separator = ["\r\n"];
     }
 }

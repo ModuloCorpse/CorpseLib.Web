@@ -6,7 +6,7 @@ namespace CorpseLib.Web.Http
 {
     public class Path
     {
-        private readonly Dictionary<string, string?> m_Data = new();
+        private readonly Dictionary<string, string?> m_Data = [];
         private readonly string[] m_SplittedPath;
         private readonly string m_FullPath;
 
@@ -41,13 +41,13 @@ namespace CorpseLib.Web.Http
 
         public Path()
         {
-            m_SplittedPath = Array.Empty<string>();
+            m_SplittedPath = [];
             m_FullPath = string.Empty;
         }
 
         public Path(string path)
         {
-            while (path.StartsWith("/"))
+            while (path.StartsWith('/'))
                 path = path[1..];
             int parametersIdx = path.IndexOf('?');
             if (parametersIdx < 0)
@@ -58,7 +58,7 @@ namespace CorpseLib.Web.Http
                 if (!string.IsNullOrEmpty(clearedPath))
                     m_SplittedPath = clearedPath.Split('/');
                 else
-                    m_SplittedPath = Array.Empty<string>();
+                    m_SplittedPath = [];
                 string parameterLine = path[(parametersIdx + 1)..];
                 string[] datas = parameterLine.Split('&');
                 foreach (string s in datas)

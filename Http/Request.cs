@@ -31,7 +31,7 @@ namespace CorpseLib.Web.Http
         /// <param name="request">Content of the received HTTP request</param>
         public Request(string request)
         {
-            List<string> attributes = request.Split(new string[] { "\r\n" }, StringSplitOptions.None).ToList();
+            List<string> attributes = [.. request.Split(separator, StringSplitOptions.None)];
             string[] requestLine = attributes[0].Trim().Split(' ');
 
             m_Method = (requestLine[0]) switch
@@ -135,5 +135,7 @@ namespace CorpseLib.Web.Http
         /// HTTP version of the request
         /// </summary>
         public string Version => m_Version;
+
+        private static readonly string[] separator = ["\r\n"];
     }
 }

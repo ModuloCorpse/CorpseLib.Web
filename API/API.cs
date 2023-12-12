@@ -5,18 +5,12 @@ namespace CorpseLib.Web.API
 {
     public class API
     {
-        public class APIProtocol : HttpProtocol
+        public class APIProtocol(API api, string id) : HttpProtocol
         {
-            private readonly API m_API;
-            private readonly string m_ID;
+            private readonly API m_API = api;
+            private readonly string m_ID = id;
 
             public string ID => m_ID;
-
-            public APIProtocol(API api, string id)
-            {
-                m_API = api;
-                m_ID = id;
-            }
 
             protected override void OnHTTPRequest(Request request) => Send(m_API.HandleAPIRequest(request));
 
@@ -29,7 +23,7 @@ namespace CorpseLib.Web.API
 
         private readonly EndpointTree<AHTTPEndpoint> m_HTTPEndpointTree = new();
         private readonly EndpointTree<AWebsocketEndpoint> m_WebsocketEndpointTree = new();
-        private readonly Dictionary<string, AWebsocketEndpoint> m_ClientEndpoint = new();
+        private readonly Dictionary<string, AWebsocketEndpoint> m_ClientEndpoint = [];
         private readonly TCPAsyncServer m_AsyncServer;
 
         public bool IsRunning => m_AsyncServer.IsRunning();

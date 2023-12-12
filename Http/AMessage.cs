@@ -4,9 +4,9 @@ namespace CorpseLib.Web.Http
 {
     public abstract class AMessage
     {
-        private readonly Dictionary<string, object> m_Fields = new();
-        private readonly Dictionary<string, object> m_LowerFields = new();
-        private byte[] m_Body = Array.Empty<byte>();
+        private readonly Dictionary<string, object> m_Fields = [];
+        private readonly Dictionary<string, object> m_LowerFields = [];
+        private byte[] m_Body = [];
 
         internal Dictionary<string, object> Fields => m_Fields;
         internal string Header => GetHeader();

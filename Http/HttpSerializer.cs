@@ -9,7 +9,7 @@ namespace CorpseLib.Web.Http
 
         private OperationResult<AMessage> HandleMessage(AMessage message, BytesReader reader)
         {
-            if (message.HaveHeaderField("Transfer-Encoding") && ((string)message["Transfer-Encoding"]).ToLower().Contains("chunked"))
+            if (message.HaveHeaderField("Transfer-Encoding") && ((string)message["Transfer-Encoding"]).Contains("chunked", StringComparison.CurrentCultureIgnoreCase))
                 return m_ChunkedMessageBuilder.HandleMessage(message, reader);
             else if (message.HaveHeaderField("Content-Length"))
                 return m_MessageBuilder.HandleMessage(message, reader);
@@ -19,7 +19,7 @@ namespace CorpseLib.Web.Http
 
         protected override OperationResult<AMessage> Deserialize(BytesReader reader)
         {
-            while (reader.IndexOf(new byte[] { 13, 10 }) == 0)
+            while (reader.IndexOf("\r\n"u8.ToArray()) == 0)
                 reader.ReadBytes(2);
             if (!reader.CanRead())
                 return new(null);
@@ -27,7 +27,7 @@ namespace CorpseLib.Web.Http
                 return m_ChunkedMessageBuilder.HandleHeldMessage(reader);
             if (m_MessageBuilder.IsHoldingMessage)
                 return m_MessageBuilder.HandleHeldMessage(reader);
-            int position = reader.IndexOf(new byte[] { 13, 10, 13, 10 });
+            int position = reader.IndexOf("\r\n\r\n"u8.ToArray());
             if (position >= 0)
             {
                 string data = reader.ReadString(position);

@@ -8,7 +8,7 @@ namespace CorpseLib.Web.API.Event
         private abstract class AEventHandler
         {
             private readonly EventEndpoint m_Manager;
-            private readonly HashSet<string> m_RegisteredClients = new();
+            private readonly HashSet<string> m_RegisteredClients = [];
             private readonly string m_EventType;
 
             public string EventType => m_EventType;
@@ -26,20 +26,15 @@ namespace CorpseLib.Web.API.Event
             protected void Emit(string type, JObject eventData) => m_Manager.SendEvent(m_RegisteredClients.ToArray(), type, eventData);
         }
 
-        private class EventHandler : AEventHandler
+        private class EventHandler(EventEndpoint manager, string eventType) : AEventHandler(manager, eventType)
         {
-            public EventHandler(EventEndpoint manager, string eventType) : base(manager, eventType) { }
-
             public void RegisterToCanal(Canal canal) => canal.Register(Trigger);
             public void UnregisterFromCanal(Canal canal) => canal.Unregister(Trigger);
-
             public void Trigger() => Emit("event", new JObject() { { "event", EventType }, { "data", new JObject() } });
         }
 
-        private class EventHandler<T> : AEventHandler
+        private class EventHandler<T>(EventEndpoint manager, string eventType) : AEventHandler(manager, eventType)
         {
-            public EventHandler(EventEndpoint manager, string eventType) : base(manager, eventType) { }
-
             public void RegisterToCanal(Canal<T> canal) => canal.Register(Emit);
             public void UnregisterFromCanal(Canal<T> canal) => canal.Unregister(Emit);
 

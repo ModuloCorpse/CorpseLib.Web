@@ -26,7 +26,7 @@ namespace CorpseLib.Web
         {
             m_Extensions = extensions;
             m_SecWebSocketKey = Guid.NewGuid().ToString().Replace("-", string.Empty);
-            m_ExpectedSecWebSocketKey = Convert.ToBase64String(System.Security.Cryptography.SHA1.Create().ComputeHash(Encoding.UTF8.GetBytes(m_SecWebSocketKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
+            m_ExpectedSecWebSocketKey = Convert.ToBase64String(System.Security.Cryptography.SHA1.HashData(Encoding.UTF8.GetBytes(m_SecWebSocketKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
             m_FragmentSize = fragmentSize;
         }
 
@@ -51,12 +51,12 @@ namespace CorpseLib.Web
         public void LoadCertificate(string path) => m_Certificate = X509Certificate.CreateFromCertFile(path);
 
         public HttpProtocol(Dictionary<string, string> extensions) : this(extensions, -1) { }
-        public HttpProtocol(int fragmentSize) : this(new(), fragmentSize) { }
-        public HttpProtocol() : this(new(), -1) { }
+        public HttpProtocol(int fragmentSize) : this([], fragmentSize) { }
+        public HttpProtocol() : this([], -1) { }
 
         private List<Frame> FragmentFrame(bool fin, int opCode, byte[] message)
         {
-            List<Frame> frames = new();
+            List<Frame> frames = [];
             int nbFragment = (m_FragmentSize > 0 && (opCode == 1 || opCode == 2)) ? message.Length / m_FragmentSize : 0;
             if (nbFragment == 0)
             {
@@ -124,7 +124,7 @@ namespace CorpseLib.Web
                     handshakeResponse["Content-Type"] = "text/html";
                     handshakeResponse["Connection"] = "Upgrade";
                     handshakeResponse["Upgrade"] = "websocket";
-                    handshakeResponse["Sec-WebSocket-Accept"] = Convert.ToBase64String(System.Security.Cryptography.SHA1.Create().ComputeHash(Encoding.UTF8.GetBytes((string)request["Sec-WebSocket-Key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
+                    handshakeResponse["Sec-WebSocket-Accept"] = Convert.ToBase64String(System.Security.Cryptography.SHA1.HashData(Encoding.UTF8.GetBytes((string)request["Sec-WebSocket-Key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
                     Send(handshakeResponse);
                     m_IsWebsocket = true;
                     m_WebSocketPath = request.Path;

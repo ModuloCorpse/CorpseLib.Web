@@ -6,30 +6,17 @@ namespace CorpseLib.Web.OAuth
 {
     public class Authenticator
     {
-        private class AuthenticatorClientProtocol : HttpProtocol
+        private class AuthenticatorClientProtocol(Operation<RefreshToken> tokenOperation, URI redirectURL, string[] expectedScope, string publicKey, string privateKey, string pageContent, string host, string expectedState, string tokenPath) : HttpProtocol
         {
-            private readonly Operation<RefreshToken> m_TokenOperation;
-            private readonly URI m_RedirectURL;
-            private readonly string[] m_ExpectedScope;
-            private readonly string m_PublicKey;
-            private readonly string m_PrivateKey;
-            private readonly string m_PageContent;
-            private readonly string m_Host;
-            private readonly string m_ExpectedState;
-            private readonly string m_TokenPath;
-
-            public AuthenticatorClientProtocol(Operation<RefreshToken> tokenOperation, URI redirectURL, string[] expectedScope, string publicKey, string privateKey, string pageContent, string host, string expectedState, string tokenPath)
-            {
-                m_TokenOperation = tokenOperation;
-                m_RedirectURL = redirectURL;
-                m_ExpectedScope = expectedScope;
-                m_PublicKey = publicKey;
-                m_PrivateKey = privateKey;
-                m_PageContent = pageContent;
-                m_Host = host;
-                m_ExpectedState = expectedState;
-                m_TokenPath = tokenPath;
-            }
+            private readonly Operation<RefreshToken> m_TokenOperation = tokenOperation;
+            private readonly URI m_RedirectURL = redirectURL;
+            private readonly string[] m_ExpectedScope = expectedScope;
+            private readonly string m_PublicKey = publicKey;
+            private readonly string m_PrivateKey = privateKey;
+            private readonly string m_PageContent = pageContent;
+            private readonly string m_Host = host;
+            private readonly string m_ExpectedState = expectedState;
+            private readonly string m_TokenPath = tokenPath;
 
             protected override void OnHTTPRequest(Request request)
             {
@@ -42,7 +29,7 @@ namespace CorpseLib.Web.OAuth
                         {
                             if (m_ExpectedState == state)
                             {
-                                List<string> scopes = new();
+                                List<string> scopes = [];
                                 if (request.TryGetParameter("scope", out string? scope))
                                     scopes.AddRange(scope!.Replace("%3A", ":").Split('+'));
                                 if (request.TryGetParameter("code", out string? token) && m_ExpectedScope.All(item => scopes.Contains(item)) && scopes.All(item => m_ExpectedScope.Contains(item)))

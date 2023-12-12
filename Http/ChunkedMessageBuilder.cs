@@ -9,7 +9,7 @@ namespace CorpseLib.Web.Http
         private bool m_IsHexa = true;
         private int m_ChunkSize = 0;
         private int m_CurrentChunkSize = 0;
-        private byte[] m_ChunkBuilder = Array.Empty<byte>();
+        private byte[] m_ChunkBuilder = [];
         private AMessage? m_HeldMessage = null;
 
         public bool IsHoldingMessage => m_HoldingMessage;
@@ -19,11 +19,11 @@ namespace CorpseLib.Web.Http
             while (reader.CanRead())
             {
                 byte[] chunk;
-                int position = reader.IndexOf(new byte[] { 13, 10 });
+                int position = reader.IndexOf("\r\n"u8.ToArray());
                 while (position == 0)
                 {
                     reader.ReadBytes(2);
-                    position = reader.IndexOf(new byte[] { 13, 10 });
+                    position = reader.IndexOf("\r\n"u8.ToArray());
                 }
 
                 if (position != -1)
@@ -41,7 +41,7 @@ namespace CorpseLib.Web.Http
                     if (m_ChunkSize == 0)
                     {
                         string bodyContent = Encoding.UTF8.GetString(m_ChunkBuilder);
-                        m_ChunkBuilder = Array.Empty<byte>();
+                        m_ChunkBuilder = [];
                         return bodyContent;
                     }
                     m_IsHexa = false;

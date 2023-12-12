@@ -18,8 +18,8 @@ namespace CorpseLib.Web
 
         public WebSocketEventProtocol(Dictionary<string, string> extensions, int fragmentSize) : base(extensions, fragmentSize) { }
         public WebSocketEventProtocol(Dictionary<string, string> extensions) : base(extensions, -1) { }
-        public WebSocketEventProtocol(int fragmentSize) : base(new(), fragmentSize) { }
-        public WebSocketEventProtocol() : base(new(), -1) { }
+        public WebSocketEventProtocol(int fragmentSize) : base([], fragmentSize) { }
+        public WebSocketEventProtocol() : base([], -1) { }
 
 
         protected override void OnWSFrameReceived(Frame frame) => OnFrameReceived?.Invoke(frame);

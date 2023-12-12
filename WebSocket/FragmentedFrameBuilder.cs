@@ -2,7 +2,7 @@
 {
     public class FragmentedFrameBuilder
     {
-        private readonly List<Frame> m_Frames = new();
+        private readonly List<Frame> m_Frames = [];
 
         public void Clear() => m_Frames.Clear();
 
@@ -20,7 +20,7 @@
                     m_Frames.Add(frame);
                     int opCode = m_Frames[0].GetOpCode();
                     short statusCode = m_Frames[0].GetStatusCode();
-                    byte[] contentBuffer = Array.Empty<byte>();
+                    byte[] contentBuffer = [];
                     foreach (Frame fragmentedFrame in m_Frames)
                     {
                         byte[] frameContent = fragmentedFrame.GetContent();

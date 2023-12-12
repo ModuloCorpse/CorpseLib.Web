@@ -6,8 +6,8 @@ namespace CorpseLib.Web
     {
         public WebSocketProtocol(Dictionary<string, string> extensions, int fragmentSize) : base(extensions, fragmentSize) { }
         public WebSocketProtocol(Dictionary<string, string> extensions) : base(extensions, -1) { }
-        public WebSocketProtocol(int fragmentSize) : base(new(), fragmentSize) { }
-        public WebSocketProtocol() : base(new(), -1) { }
+        public WebSocketProtocol(int fragmentSize) : base([], fragmentSize) { }
+        public WebSocketProtocol() : base([], -1) { }
 
         protected override void OnClientConnected()
         {

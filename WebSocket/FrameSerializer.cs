@@ -22,7 +22,7 @@ namespace CorpseLib.Web.WebSocket
             else if (payloadLen == 127)
                 payloadLen = reader.ReadLong(true);
 
-            byte[] mask = (useMask) ? reader.ReadBytes(4) : Array.Empty<byte>();
+            byte[] mask = (useMask) ? reader.ReadBytes(4) : [];
             byte[] buffer = reader.ReadBytes((int)payloadLen);
 
             if (useMask)
@@ -48,7 +48,7 @@ namespace CorpseLib.Web.WebSocket
             {
                 byte[] statusByte = BitConverter.GetBytes(obj.GetStatusCode());
                 (statusByte[1], statusByte[0]) = (statusByte[0], statusByte[1]);
-                bytesRaw = statusByte.Concat(bytesRaw).ToArray();
+                bytesRaw = [.. statusByte, .. bytesRaw];
             }
 
             long length = bytesRaw.Length;
@@ -81,7 +81,7 @@ namespace CorpseLib.Web.WebSocket
                 writer.Write((byte)(length & 255));
             }
 
-            byte[] frameMask = (obj.UseMask()) ? obj.GetMask() : Array.Empty<byte>();
+            byte[] frameMask = (obj.UseMask()) ? obj.GetMask() : [];
             if (obj.UseMask())
             {
                 for (byte i = 0; i != 4; ++i)

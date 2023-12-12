@@ -5,11 +5,9 @@ namespace CorpseLib.Web.API.Event
 {
     public class EventClient : WebSocketProtocol
     {
-        private class EventAPIClientProtocol : WebSocketProtocol
+        private class EventAPIClientProtocol(EventClient client) : WebSocketProtocol
         {
-            private readonly EventClient m_Client;
-
-            public EventAPIClientProtocol(EventClient client) => m_Client = client;
+            private readonly EventClient m_Client = client;
 
             protected override void OnWSMessage(string message)
             {
@@ -42,19 +40,13 @@ namespace CorpseLib.Web.API.Event
             }
         }
 
-        public class EventArgs
+        public class EventArgs(string eventType, JNode data)
         {
-            private readonly JNode m_Data;
-            private readonly string m_EventType;
+            private readonly JNode m_Data = data;
+            private readonly string m_EventType = eventType;
 
             public string EventType => m_EventType;
             public JNode Data => m_Data;
-
-            public EventArgs(string eventType, JNode data)
-            {
-                m_Data = data;
-                m_EventType = eventType;
-            }
 
             public T? GetData<T>() => m_Data.Cast<T>();
         }
@@ -64,17 +56,17 @@ namespace CorpseLib.Web.API.Event
             public void Emit(JNode data);
         }
 
-        private class EventCanalWrapper : IEventCanalWrapper
+        private class EventCanalWrapper(Canal canal) : IEventCanalWrapper
         {
-            private readonly Canal m_Canal;
-            public EventCanalWrapper(Canal canal) => m_Canal = canal;
+            private readonly Canal m_Canal = canal;
+
             public void Emit(JNode data) => m_Canal.Trigger();
         }
 
-        private class EventCanalWrapper<T> : IEventCanalWrapper
+        private class EventCanalWrapper<T>(Canal<T> canal) : IEventCanalWrapper
         {
-            private readonly Canal<T> m_Canal;
-            public EventCanalWrapper(Canal<T> canal) => m_Canal = canal;
+            private readonly Canal<T> m_Canal = canal;
+
             public void Emit(JNode data)
             {
                 T? @event = data.Cast<T>();
@@ -83,8 +75,8 @@ namespace CorpseLib.Web.API.Event
             }
         }
 
-        private readonly Dictionary<string, IEventCanalWrapper> m_AwaitingWrapper = new();
-        private readonly Dictionary<string, IEventCanalWrapper> m_CanalManager = new();
+        private readonly Dictionary<string, IEventCanalWrapper> m_AwaitingWrapper = [];
+        private readonly Dictionary<string, IEventCanalWrapper> m_CanalManager = [];
 
         public static EventClient NewClient(string host, int port, bool isSecured = false)
         {

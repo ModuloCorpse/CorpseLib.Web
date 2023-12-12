@@ -2,7 +2,7 @@
 {
     public class PathTree<TValue>
     {
-        private readonly Dictionary<string, PathTree<TValue>> m_Children = new();
+        private readonly Dictionary<string, PathTree<TValue>> m_Children = [];
         private readonly TValue? m_Value;
         private readonly bool m_NeedExactPath = true;
 
