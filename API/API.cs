@@ -28,7 +28,7 @@ namespace CorpseLib.Web.API
 
         public bool IsRunning => m_AsyncServer.IsRunning();
 
-        public API(int port) => m_AsyncServer = new(() => new APIProtocol(this, Guid.NewGuid().ToString().Replace("-", "")), port);
+        public API(int port) => m_AsyncServer = new(() => new APIProtocol(this, Guid.NewGuid().ToString().Replace("-", string.Empty)), port);
 
         public void Start() => m_AsyncServer.Start();
         public void Stop() => m_AsyncServer.Stop();
