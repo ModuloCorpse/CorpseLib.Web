@@ -1,5 +1,4 @@
 ﻿using CorpseLib.Json;
-using CorpseLib.ManagedObject;
 using System.Collections.Concurrent;
 
 namespace CorpseLib.Web.API.Event
@@ -58,7 +57,9 @@ namespace CorpseLib.Web.API.Event
 
         public EventEndpoint() : base("/event") { }
         public EventEndpoint(string path) : base(path) { }
+        public EventEndpoint(Http.Path path) : base(path) { }
         public EventEndpoint(string path, bool needExactPath) : base(path, needExactPath) { }
+        public EventEndpoint(Http.Path path, bool needExactPath) : base(path, needExactPath) { }
 
         protected static void SendEvent(API.APIProtocol client, string type, JObject data)
         {
@@ -81,7 +82,7 @@ namespace CorpseLib.Web.API.Event
             }
         }
 
-        protected override void OnClientRegistered(API.APIProtocol client, string path) => m_Clients[client.ID] = client;
+        protected override void OnClientRegistered(API.APIProtocol client, Http.Path path) => m_Clients[client.ID] = client;
 
         protected override void OnClientUnregistered(string id)
         {

@@ -4,11 +4,10 @@ namespace CorpseLib.Web
 {
     public class WebSocketProtocol : HttpProtocol
     {
-        public WebSocketProtocol(Dictionary<string, string> extensions, int fragmentSize, bool isWebsocket): base(extensions, fragmentSize, isWebsocket) { }
-        public WebSocketProtocol(Dictionary<string, string> extensions, int fragmentSize) : base(extensions, fragmentSize, false) { }
-        public WebSocketProtocol(Dictionary<string, string> extensions) : base(extensions, -1, false) { }
-        public WebSocketProtocol(int fragmentSize) : base(new(), fragmentSize, false) { }
-        public WebSocketProtocol() : base(new(), -1, false) { }
+        public WebSocketProtocol(Dictionary<string, string> extensions, int fragmentSize) : base(extensions, fragmentSize) { }
+        public WebSocketProtocol(Dictionary<string, string> extensions) : base(extensions, -1) { }
+        public WebSocketProtocol(int fragmentSize) : base(new(), fragmentSize) { }
+        public WebSocketProtocol() : base(new(), -1) { }
 
         protected override void OnClientConnected()
         {

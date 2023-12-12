@@ -1,4 +1,6 @@
-﻿namespace CorpseLib.Web.Http
+﻿using System.Text;
+
+namespace CorpseLib.Web.Http
 {
     /// <summary>
     /// An HTTP response
@@ -32,15 +34,15 @@
         /// </summary>
         /// <param name="statusCode">Status code of the response</param>
         /// <param name="statusMessage">Status message of the response</param>
-        /// <param name="body">Body of the response (empty by default)</param>
-        /// <param name="contentType">MIME type of the content to send (null by default)</param>
-        public Response(int statusCode, string statusMessage, string body = "", MIME? contentType = null)
+        /// <param name="body">Body of the response</param>
+        /// <param name="contentType">MIME type of the content to send</param>
+        public Response(int statusCode, string statusMessage, byte[] body, MIME contentType)
         {
             m_Version = "HTTP/1.1";
             m_StatusCode = statusCode;
             m_StatusMessage = statusMessage;
             SetBody(body);
-            if (!string.IsNullOrWhiteSpace(body) && contentType != null)
+            if (body.Length > 0)
             {
                 if (contentType.HaveParameter())
                     base["Content-Type"] = contentType.ToString();
@@ -48,6 +50,44 @@
                     base["Content-Type"] = string.Format("{0}; charset=utf-8", contentType);
             }
         }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="statusCode">Status code of the response</param>
+        /// <param name="statusMessage">Status message of the response</param>
+        /// <param name="body">Body of the response</param>
+        public Response(int statusCode, string statusMessage, byte[] body)
+        {
+            m_Version = "HTTP/1.1";
+            m_StatusCode = statusCode;
+            m_StatusMessage = statusMessage;
+            SetBody(body);
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="statusCode">Status code of the response</param>
+        /// <param name="statusMessage">Status message of the response</param>
+        /// <param name="body">Body of the response</param>
+        /// <param name="contentType">MIME type of the content to send</param>
+        public Response(int statusCode, string statusMessage, string body, MIME contentType) : this(statusCode, statusMessage, Encoding.UTF8.GetBytes(body), contentType) { }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="statusCode">Status code of the response</param>
+        /// <param name="statusMessage">Status message of the response</param>
+        /// <param name="body">Body of the response</param>
+        public Response(int statusCode, string statusMessage, string body) : this(statusCode, statusMessage, Encoding.UTF8.GetBytes(body)) { }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="statusCode">Status code of the response</param>
+        /// <param name="statusMessage">Status message of the response</param>
+        public Response(int statusCode, string statusMessage) : this(statusCode, statusMessage, Array.Empty<byte>()) { }
 
         protected override string GetHeader() => string.Format("{0} {1} {2}", m_Version, m_StatusCode, m_StatusMessage);
 

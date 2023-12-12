@@ -105,32 +105,32 @@ namespace CorpseLib.Web.API.Event
         protected override void OnWSMessage(string message)
         {
             JFile json = new(message);
-            if (json.TryGet("type", out string? type))
+            if (json.TryGet("type", out string? type) && json.TryGet("data", out JObject? data))
             {
                 switch (type)
                 {
                     case "error":
                     {
-                        if (json.TryGet("event", out string? @event))
+                        if (data!.TryGet("event", out string? @event))
                             m_AwaitingWrapper.Remove(@event!);
                         break;
                     }
                     case "subscribed":
                     {
-                        if (json.TryGet("event", out string? @event))
+                        if (data!.TryGet("event", out string? @event))
                             Subsribed(@event!);
                         break;
                     }
                     case "unsubscribed":
                     {
-                        if (json.TryGet("event", out string? @event))
+                        if (data!.TryGet("event", out string? @event))
                             Unsubsribed(@event!);
                         break;
                     }
                     case "event":
                     {
-                        JNode? node = json.Get("data");
-                        if (node != null && json.TryGet("event", out string? @event))
+                        JNode? node = data!.Get("data");
+                        if (node != null && data!.TryGet("event", out string? @event))
                             Receive(@event!, node);
                         break;
                     }

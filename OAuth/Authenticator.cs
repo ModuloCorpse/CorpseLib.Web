@@ -35,7 +35,7 @@ namespace CorpseLib.Web.OAuth
             {
                 if (request.Method == Request.MethodType.GET)
                 {
-                    if (request.Path == m_RedirectURL.Path)
+                    if (request.Path.FullPath == m_RedirectURL.Path)
                     {
                         Send(new Response(200, "Ok", m_PageContent));
                         if (request.TryGetParameter("state", out string? state))

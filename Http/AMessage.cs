@@ -6,7 +6,10 @@ namespace CorpseLib.Web.Http
     {
         private readonly Dictionary<string, object> m_Fields = new();
         private readonly Dictionary<string, object> m_LowerFields = new();
-        private string m_Body = string.Empty;
+        private byte[] m_Body = Array.Empty<byte>();
+
+        internal Dictionary<string, object> Fields => m_Fields;
+        internal string Header => GetHeader();
 
         private void SetField(string key, object value)
         {
@@ -18,11 +21,21 @@ namespace CorpseLib.Web.Http
 
         internal void SetBody(string body)
         {
+            m_Body = Encoding.UTF8.GetBytes(body);
+            if (m_Body.Length > 0)
+            {
+                SetField("Accept-Ranges", "bytes");
+                SetField("Content-Length", m_Body.Length);
+            }
+        }
+
+        internal void SetBody(byte[] body)
+        {
             m_Body = body;
             if (m_Body.Length > 0)
             {
                 SetField("Accept-Ranges", "bytes");
-                SetField("Content-Length", Encoding.UTF8.GetBytes(m_Body).Length);
+                SetField("Content-Length", m_Body.Length);
             }
         }
 
@@ -48,9 +61,13 @@ namespace CorpseLib.Web.Http
         public bool HaveHeaderField(string headerFieldName) => m_LowerFields.ContainsKey(headerFieldName.ToLower());
 
         /// <summary>
-        /// Body of the message
+        /// Body of the message as a string
         /// </summary>
-        public string Body { get => m_Body; }
+        public string Body => Encoding.UTF8.GetString(m_Body);
+        /// <summary>
+        /// Body of the message as bytes
+        /// </summary>
+        public byte[] RawBody => m_Body;
         /// <summary>
         /// Header field accessors
         /// </summary>
@@ -76,7 +93,7 @@ namespace CorpseLib.Web.Http
                 builder.Append("\r\n");
             }
             builder.Append("\r\n");
-            builder.Append(m_Body);
+            builder.Append(Encoding.UTF8.GetString(m_Body));
             return builder.ToString();
         }
 

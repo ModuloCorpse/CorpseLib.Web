@@ -41,7 +41,9 @@ namespace CorpseLib.Web.API
 
         ~API() => m_AsyncServer.Stop();
 
-        public void AddEndpoint(string path, Request.MethodType methodType, HTTPEndpoint.MethodHandler methodHandler)
+        public void AddEndpoint(string path, Request.MethodType methodType, HTTPEndpoint.MethodHandler methodHandler) => AddEndpoint(new Http.Path(path), methodType, methodHandler);
+
+        public void AddEndpoint(Http.Path path, Request.MethodType methodType, HTTPEndpoint.MethodHandler methodHandler)
         {
             AHTTPEndpoint? endpoint = m_HTTPEndpointTree.GetEndpoint(path);
             if (endpoint != null && endpoint is HTTPEndpoint httpEndpoint)
@@ -64,11 +66,17 @@ namespace CorpseLib.Web.API
 
         internal Response HandleAPIRequest(Request request)
         {
-            AHTTPEndpoint? httpEndpoint = m_HTTPEndpointTree.GetEndpoint(request.Path);
-            if (httpEndpoint != null)
-                return httpEndpoint.OnRequest(request);
-            else
-                return new(404, "Not Found", string.Format("Endpoint {0} does not exist", request.Path));
+            try
+            {
+                AHTTPEndpoint? httpEndpoint = m_HTTPEndpointTree.GetEndpoint(request.Path);
+                if (httpEndpoint != null)
+                    return httpEndpoint.OnRequest(request);
+                else
+                    return new(404, "Not Found", string.Format("Endpoint {0} does not exist", request.Path));
+            } catch (Exception e)
+            {
+                return new(500, "Internal Server Error", string.Format("API caught exception: {0}", e.Message));
+            }
         }
 
         internal void HandleWebsocketOpen(APIProtocol client, Request request)

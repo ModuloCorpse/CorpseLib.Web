@@ -40,6 +40,19 @@ namespace CorpseLib.Web.Http
             return new(null);
         }
 
-        protected override void Serialize(AMessage obj, BytesWriter writer) => writer.Write(obj.ToString());
+        protected override void Serialize(AMessage obj, BytesWriter writer)
+        {
+            writer.Write(obj.Header);
+            writer.Write("\r\n");
+            foreach (var field in obj.Fields)
+            {
+                writer.Write(field.Key);
+                writer.Write(": ");
+                writer.Write(field.Value.ToString() ?? string.Empty);
+                writer.Write("\r\n");
+            }
+            writer.Write("\r\n");
+            writer.Write(obj.RawBody);
+        }
     }
 }

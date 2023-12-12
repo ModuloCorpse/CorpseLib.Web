@@ -16,8 +16,8 @@ namespace CorpseLib.Web.API
         private MethodHandler? m_Put = null;
         private MethodHandler? m_Trace = null;
 
-        public HTTPEndpoint(string path) : base(path) { }
-        public HTTPEndpoint(string path, bool needExactPath) : base(path, needExactPath) { }
+        public HTTPEndpoint(Http.Path path) : base(path) { }
+        public HTTPEndpoint(Http.Path path, bool needExactPath) : base(path, needExactPath) { }
 
         public void SetEndpoint(Request.MethodType methodType, MethodHandler methodHandler)
         {

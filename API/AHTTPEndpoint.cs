@@ -4,8 +4,10 @@ namespace CorpseLib.Web.API
 {
     public class AHTTPEndpoint : AEndpoint
     {
-        protected AHTTPEndpoint(string path) : base(path, false) { }
-        protected AHTTPEndpoint(string path, bool needExactPath) : base(path, needExactPath) { }
+        protected AHTTPEndpoint(string path) : base(new(path), false) { }
+        protected AHTTPEndpoint(Http.Path path) : base(path, false) { }
+        protected AHTTPEndpoint(string path, bool needExactPath) : base(new(path), needExactPath) { }
+        protected AHTTPEndpoint(Http.Path path, bool needExactPath) : base(path, needExactPath) { }
 
         internal Response OnRequest(Request request) => request.Method switch
         {

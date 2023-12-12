@@ -15,16 +15,19 @@ namespace CorpseLib.Web
         private readonly Dictionary<string, string> m_Extensions;
         private readonly string m_SecWebSocketKey;
         private readonly string m_ExpectedSecWebSocketKey;
+        private Http.Path m_WebSocketPath = new();
         private readonly int m_FragmentSize;
         private bool m_IsWebsocket = false;
 
-        public HttpProtocol(Dictionary<string, string> extensions, int fragmentSize, bool isWebsocket)
+        public Http.Path WebSocketPath => m_WebSocketPath;
+        public bool IsWebsocket => m_IsWebsocket;
+
+        public HttpProtocol(Dictionary<string, string> extensions, int fragmentSize)
         {
             m_Extensions = extensions;
-            m_SecWebSocketKey = (!isWebsocket) ? Guid.NewGuid().ToString().Replace("-", string.Empty) : string.Empty;
-            m_ExpectedSecWebSocketKey = (!isWebsocket) ? Convert.ToBase64String(System.Security.Cryptography.SHA1.Create().ComputeHash(Encoding.UTF8.GetBytes(m_SecWebSocketKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))) : string.Empty;
+            m_SecWebSocketKey = Guid.NewGuid().ToString().Replace("-", string.Empty);
+            m_ExpectedSecWebSocketKey = Convert.ToBase64String(System.Security.Cryptography.SHA1.Create().ComputeHash(Encoding.UTF8.GetBytes(m_SecWebSocketKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
             m_FragmentSize = fragmentSize;
-            m_IsWebsocket = isWebsocket;
         }
 
         protected void SetExtension(string key, string value) => m_Extensions[key] = value;
@@ -47,10 +50,9 @@ namespace CorpseLib.Web
         /// <param name="path">Path of the SSL certificate file to use on the server</param>
         public void LoadCertificate(string path) => m_Certificate = X509Certificate.CreateFromCertFile(path);
 
-        public HttpProtocol(Dictionary<string, string> extensions, int fragmentSize) : this(extensions, fragmentSize, false) { }
-        public HttpProtocol(Dictionary<string, string> extensions) : this(extensions, -1, false) { }
-        public HttpProtocol(int fragmentSize) : this(new(), fragmentSize, false) { }
-        public HttpProtocol() : this(new(), -1, false) { }
+        public HttpProtocol(Dictionary<string, string> extensions) : this(extensions, -1) { }
+        public HttpProtocol(int fragmentSize) : this(new(), fragmentSize) { }
+        public HttpProtocol() : this(new(), -1) { }
 
         private List<Frame> FragmentFrame(bool fin, int opCode, byte[] message)
         {
@@ -125,6 +127,7 @@ namespace CorpseLib.Web
                     handshakeResponse["Sec-WebSocket-Accept"] = Convert.ToBase64String(System.Security.Cryptography.SHA1.Create().ComputeHash(Encoding.UTF8.GetBytes((string)request["Sec-WebSocket-Key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
                     Send(handshakeResponse);
                     m_IsWebsocket = true;
+                    m_WebSocketPath = request.Path;
                     OnWSOpen(request);
                 }
                 else
@@ -220,7 +223,7 @@ namespace CorpseLib.Web
         protected void SendWebSocketHandshake()
         {
             URI url = GetURL();
-            Request handshakeRequest = new(Request.MethodType.GET, (!string.IsNullOrWhiteSpace(url.Path)) ? url.Path : "/");
+            Request handshakeRequest = new(Request.MethodType.GET, (!string.IsNullOrWhiteSpace(url.FullPath)) ? url.Path : "/");
             handshakeRequest["Upgrade"] = "websocket";
             handshakeRequest["Connection"] = "Upgrade";
             handshakeRequest["Sec-WebSocket-Version"] = "13";

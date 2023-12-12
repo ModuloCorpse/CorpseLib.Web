@@ -16,11 +16,10 @@ namespace CorpseLib.Web
         public event MessageDelegate? OnMessage;
         public event CloseDelegate? OnClose;
 
-        public WebSocketEventProtocol(Dictionary<string, string> extensions, int fragmentSize, bool isWebsocket) : base(extensions, fragmentSize, isWebsocket) { }
-        public WebSocketEventProtocol(Dictionary<string, string> extensions, int fragmentSize) : base(extensions, fragmentSize, false) { }
-        public WebSocketEventProtocol(Dictionary<string, string> extensions) : base(extensions, -1, false) { }
-        public WebSocketEventProtocol(int fragmentSize) : base(new(), fragmentSize, false) { }
-        public WebSocketEventProtocol() : base(new(), -1, false) { }
+        public WebSocketEventProtocol(Dictionary<string, string> extensions, int fragmentSize) : base(extensions, fragmentSize) { }
+        public WebSocketEventProtocol(Dictionary<string, string> extensions) : base(extensions, -1) { }
+        public WebSocketEventProtocol(int fragmentSize) : base(new(), fragmentSize) { }
+        public WebSocketEventProtocol() : base(new(), -1) { }
 
 
         protected override void OnWSFrameReceived(Frame frame) => OnFrameReceived?.Invoke(frame);

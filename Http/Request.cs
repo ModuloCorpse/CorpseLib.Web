@@ -1,5 +1,4 @@
-﻿using CorpseLib.Network;
-using System.Text;
+﻿using System.Text;
 
 namespace CorpseLib.Web.Http
 {
@@ -23,8 +22,7 @@ namespace CorpseLib.Web.Http
         }
 
         private readonly MethodType m_Method;
-        private readonly URIQuery? m_Parameters = null;
-        private readonly string m_Path;
+        private readonly Path m_Path;
         private readonly string m_Version;
 
         /// <summary>
@@ -52,19 +50,7 @@ namespace CorpseLib.Web.Http
             m_Version = requestLine[2];
             attributes.RemoveAt(0);
             ParseHeaderFields(attributes);
-            string path = requestLine[1];
-            int parametersIdx = path.IndexOf('?');
-            if (parametersIdx < 0)
-                m_Path = path;
-            else
-            {
-                m_Path = path[..parametersIdx];
-                string parameterLine = path[(parametersIdx + 1)..];
-                m_Parameters = new(parameterLine, new char[] { '&' });
-            }
-
-            if (m_Path[^1] == '/')
-                m_Path = m_Path[0..^1];
+            m_Path = new(requestLine[1]);
         }
 
         /// <summary>
@@ -73,35 +59,46 @@ namespace CorpseLib.Web.Http
         /// <param name="method">Method of the request</param>
         /// <param name="path">URL targeted by the request</param>
         /// <param name="body">Body of the request</param>
-        public Request(MethodType method, string path, string body = "")
+        public Request(MethodType method, string path, byte[] body)
         {
             m_Method = method;
-            m_Path = path;
+            m_Path = new(path);
             m_Version = "HTTP/1.1";
             SetBody(body);
         }
 
-        private string GetHeaderPath()
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="method">Method of the request</param>
+        /// <param name="path">URL targeted by the request</param>
+        /// <param name="body">Body of the request</param>
+        public Request(MethodType method, string path, string body = "") : this(method, path, Encoding.UTF8.GetBytes(body)) { }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="method">Method of the request</param>
+        /// <param name="path">URL targeted by the request</param>
+        /// <param name="body">Body of the request</param>
+        public Request(MethodType method, string path)
         {
-            if (m_Parameters == null)
-                return m_Path;
-            StringBuilder sb = new();
-            sb.Append(m_Path);
-            sb.Append(m_Parameters);
-            return sb.ToString();
+            m_Method = method;
+            m_Path = new(path);
+            m_Version = "HTTP/1.1";
         }
 
         protected override string GetHeader() => m_Method switch
         {
-            MethodType.GET => string.Format("GET {0} {1}", GetHeaderPath(), m_Version),
-            MethodType.HEAD => string.Format("HEAD {0} {1}", GetHeaderPath(), m_Version),
-            MethodType.POST => string.Format("POST {0} {1}", GetHeaderPath(), m_Version),
-            MethodType.PUT => string.Format("PUT {0} {1}", GetHeaderPath(), m_Version),
-            MethodType.DELETE => string.Format("DELETE {0} {1}", GetHeaderPath(), m_Version),
-            MethodType.CONNECT => string.Format("CONNECT {0} {1}", GetHeaderPath(), m_Version),
-            MethodType.OPTIONS => string.Format("OPTIONS {0} {1}", GetHeaderPath(), m_Version),
-            MethodType.TRACE => string.Format("TRACE {0} {1}", GetHeaderPath(), m_Version),
-            MethodType.PATCH => string.Format("PATCH {0} {1}", GetHeaderPath(), m_Version),
+            MethodType.GET => string.Format("GET {0} {1}", m_Path, m_Version),
+            MethodType.HEAD => string.Format("HEAD {0} {1}", m_Path, m_Version),
+            MethodType.POST => string.Format("POST {0} {1}", m_Path, m_Version),
+            MethodType.PUT => string.Format("PUT {0} {1}", m_Path, m_Version),
+            MethodType.DELETE => string.Format("DELETE {0} {1}", m_Path, m_Version),
+            MethodType.CONNECT => string.Format("CONNECT {0} {1}", m_Path, m_Version),
+            MethodType.OPTIONS => string.Format("OPTIONS {0} {1}", m_Path, m_Version),
+            MethodType.TRACE => string.Format("TRACE {0} {1}", m_Path, m_Version),
+            MethodType.PATCH => string.Format("PATCH {0} {1}", m_Path, m_Version),
             _ => throw new ArgumentException()
         };
         /// <summary>
@@ -109,14 +106,14 @@ namespace CorpseLib.Web.Http
         /// </summary>
         /// <param name="parameterName">Name of the URL parameter to search</param>
         /// <returns>True if the URL parameter exists</returns>
-        public bool HaveParameter(string parameterName) => m_Parameters?.HaveData(parameterName) ?? false;
+        public bool HaveParameter(string parameterName) => m_Path.HaveParameter(parameterName);
 
         /// <summary>
         /// Get the URL parameter value of the given parameter
         /// </summary>
         /// <param name="parameterName">Name of the URL parameter to search</param>
         /// <returns>The value of the URL parameter</returns>
-        public string GetParameter(string parameterName) => m_Parameters?[parameterName] ?? string.Empty;
+        public string GetParameter(string parameterName) => m_Path[parameterName];
 
         /// <summary>
         /// Get the URL parameter value of the given parameter if it exist
@@ -124,28 +121,19 @@ namespace CorpseLib.Web.Http
         /// <param name="parameterName">Name of the URL parameter to search</param>
         /// <param name="value">Container for the value of the parameter if found</param>
         /// <returns>True if it found a value to the given parameter</returns>
-        public bool TryGetParameter(string parameterName, out string? value)
-        {
-            if (m_Parameters != null && m_Parameters.HaveData(parameterName))
-            {
-                value = m_Parameters[parameterName];
-                return true;
-            }
-            value = null;
-            return false;
-        }
+        public bool TryGetParameter(string parameterName, out string? value) => m_Path.TryGetParameter(parameterName, out value);
 
         /// <summary>
         /// Method of the request
         /// </summary>
-        public MethodType Method { get => m_Method; }
+        public MethodType Method => m_Method;
         /// <summary>
         /// URL targeted by the request
         /// </summary>
-        public string Path { get => m_Path; }
+        public Path Path => m_Path;
         /// <summary>
         /// HTTP version of the request
         /// </summary>
-        public string Version { get => m_Version; }
+        public string Version => m_Version;
     }
 }
