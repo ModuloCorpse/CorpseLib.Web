@@ -67,7 +67,7 @@ namespace CorpseLib.Web.Http
                     if (n >= 0)
                         AddParameter(s[..n], s[(n + 1)..]);
                     else
-                        m_Data[URI.Decode(s)] = null;
+                        m_Data[s] = null;
                 }
             }
             
@@ -81,7 +81,7 @@ namespace CorpseLib.Web.Http
             return new(m_SplittedPath.Skip(1).ToArray(), m_Data);
         }
 
-        public void AddParameter(string key, string value) => m_Data[URI.Decode(key)] = URI.Decode(value);
+        public void AddParameter(string key, string value) => m_Data[key] = value;
 
         public void AddParameters(Dictionary<string, string> attributes)
         {
@@ -131,11 +131,11 @@ namespace CorpseLib.Web.Http
             {
                 if (i != 0)
                     builder.Append('&');
-                builder.Append(URI.Encode(data.Key));
+                builder.Append(data.Key);
                 if (data.Value != null)
                 {
                     builder.Append('=');
-                    builder.Append(URI.Encode(data.Value));
+                    builder.Append(data.Value);
                 }
                 ++i;
             }

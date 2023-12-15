@@ -19,7 +19,7 @@ namespace CorpseLib.Web.Http
 
         protected override OperationResult<AMessage> Deserialize(BytesReader reader)
         {
-            while (reader.IndexOf("\r\n"u8.ToArray()) == 0)
+            while (reader.StartWith("\r\n"u8.ToArray()))
                 reader.ReadBytes(2);
             if (!reader.CanRead())
                 return new(null);
