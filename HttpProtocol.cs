@@ -106,7 +106,7 @@ namespace CorpseLib.Web
                         case 8: OnWSClose(frame.GetStatusCode(), Encoding.UTF8.GetString(frame.GetContent())); break; //8 - close message
                         case 9: //9 - ping message
                             frame.SetOpCode(10); //10 - pong message
-                            Send(frame);
+                            ForceSend(frame);
                             break;
                     }
                 }
@@ -125,7 +125,7 @@ namespace CorpseLib.Web
                     handshakeResponse["Connection"] = "Upgrade";
                     handshakeResponse["Upgrade"] = "websocket";
                     handshakeResponse["Sec-WebSocket-Accept"] = Convert.ToBase64String(System.Security.Cryptography.SHA1.HashData(Encoding.UTF8.GetBytes((string)request["Sec-WebSocket-Key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
-                    Send(handshakeResponse);
+                    ForceSend(handshakeResponse);
                     m_IsWebsocket = true;
                     m_WebSocketPath = request.Path;
                     OnWSOpen(request);
@@ -231,7 +231,7 @@ namespace CorpseLib.Web
             handshakeRequest["Host"] = url.Host;
             foreach (KeyValuePair<string, string> extension in m_Extensions)
                 handshakeRequest[extension.Key] = extension.Value;
-            Send(handshakeRequest);
+            ForceSend(handshakeRequest);
             if (IsSynchronous())
                 ReadFromStream();
         }

@@ -77,7 +77,11 @@ namespace CorpseLib.Web.API.Event
             }
         }
 
-        protected override void OnClientRegistered(API.APIProtocol client, Http.Path path) => m_Clients[client.ID] = client;
+        protected override void OnClientRegistered(API.APIProtocol client, Http.Path path)
+        {
+            m_Clients[client.ID] = client;
+            SendEvent(client, "welcome", new() { { "id", client.ID } });
+        }
 
         protected override void OnClientUnregistered(string id)
         {
@@ -86,66 +90,38 @@ namespace CorpseLib.Web.API.Event
                 pair.Value.UnregisterClient(id);
         }
 
-        protected override void OnClientMessage(string id, string message)
+        internal OperationResult RegisterClient(string id, string eventType)
         {
-            if (m_Clients.TryGetValue(id, out API.APIProtocol? client))
+            if (m_Clients.ContainsKey(id))
             {
-                try
+                if (m_Events.TryGetValue(eventType!, out AEventHandler? handler))
                 {
-                    JFile json = new(message);
-                    if (json.TryGet("request", out string? request))
-                    {
-                        if (request == "subscribe" || request == "unsubscribe")
-                        {
-                            if (json.TryGet("event", out string? eventType))
-                            {
-                                if (m_Events.TryGetValue(eventType!, out AEventHandler? handler))
-                                {
-                                    if (request[0] == 's')
-                                    {
-                                        handler.RegisterClient(id);
-                                        SendEvent(client, "subscribed", new JObject() { { "event", eventType } });
-                                        return;
-                                    }
-                                    else
-                                    {
-                                        handler.UnregisterClient(id);
-                                        SendEvent(client, "unsubscribed", new JObject() { { "event", eventType } });
-                                        return;
-                                    }
-                                }
-                                else
-                                {
-                                    SendEvent(client, "error", new JObject() { { "error", string.Format("Unknown event {0}", eventType) }, { "event", eventType } });
-                                    return;
-                                }
-                            }
-                            else
-                            {
-                                SendEvent(client, "error", new JObject() { { "error", "No 'event' given" } });
-                                return;
-                            }
-                        }
-                        else
-                        {
-                            OnUnknownRequest(client!, request!, json);
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        SendEvent(client, "error", new JObject() { { "error", "No 'request' given" } });
-                        return;
-                    }
+                    handler.RegisterClient(id);
+                    return new();
                 }
-                catch { }
+                else
+                    return OnRegisterToUnknownEvent(id, eventType);
             }
+            else
+                return new("Unknown websocket", string.Format("Websocket {0} does not exist", id));
         }
 
-        protected virtual void OnUnknownRequest(API.APIProtocol client, string request, JFile json)
+        protected virtual OperationResult OnRegisterToUnknownEvent(string id, string eventType) => new("Unknown event", string.Format("Unknown event {0}", eventType));
+
+        internal OperationResult UnregisterClient(string id, string eventType)
         {
-            SendEvent(client, "error", new JObject() { { "error", string.Format("Unknown request {0}", request) } });
+            if (m_Events.TryGetValue(eventType!, out AEventHandler? handler))
+            {
+                handler.UnregisterClient(id);
+                return new();
+            }
+            else
+                return OnUnregisterToUnknownEvent(id, eventType);
         }
+
+        protected virtual OperationResult OnUnregisterToUnknownEvent(string id, string eventType) => new("Unknown event", string.Format("Unknown event {0}", eventType));
+
+        protected override void OnClientMessage(string id, string message) { }
 
         public bool HaveEvent(string eventType) => m_Events.ContainsKey(eventType);
 
@@ -191,6 +167,13 @@ namespace CorpseLib.Web.API.Event
                 return true;
             }
             return false;
+        }
+
+        protected API.APIProtocol? GetClient(string id)
+        {
+            if (m_Clients.TryGetValue(id, out API.APIProtocol? client))
+                return client;
+            return null;
         }
     }
 }
