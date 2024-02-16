@@ -47,6 +47,20 @@ namespace CorpseLib.Web.API.Event
             }
         }
 
+        private class JEventHandler<T>(EventEndpoint manager, string eventType) : AEventHandler(manager, eventType) where T : JNode
+        {
+            public void RegisterToCanal(Canal<T> canal) => canal.Register(Emit);
+            public void UnregisterFromCanal(Canal<T> canal) => canal.Unregister(Emit);
+
+            public void Emit(JNode? data)
+            {
+                if (data == null)
+                    Emit("event", new JObject() { { "event", EventType }, { "data", new JNull() } });
+                else
+                    Emit("event", new JObject() { { "event", EventType }, { "data", data } });
+            }
+        }
+
         private readonly ConcurrentDictionary<string, AEventHandler> m_Events = new();
         private readonly ConcurrentDictionary<string, API.APIProtocol> m_Clients = new();
 
@@ -140,6 +154,28 @@ namespace CorpseLib.Web.API.Event
         public bool UnregisterCanal(string eventType, Canal canal)
         {
             if (m_Events.TryGetValue(eventType, out AEventHandler? handler) && handler is EventHandler eventHandler)
+            {
+                eventHandler.UnregisterFromCanal(canal);
+                return true;
+            }
+            return false;
+        }
+
+        public bool RegisterJCanal<T>(string eventType, Canal<T> canal) where T : JNode
+        {
+            if (!m_Events.ContainsKey(eventType))
+            {
+                JEventHandler<T> handler = new(this, eventType);
+                handler.RegisterToCanal(canal);
+                m_Events[eventType] = handler;
+                return true;
+            }
+            return false;
+        }
+
+        public bool UnregisterJCanal<T>(string eventType, Canal<T> canal) where T : JNode
+        {
+            if (m_Events.TryGetValue(eventType, out AEventHandler? handler) && handler is JEventHandler<T> eventHandler)
             {
                 eventHandler.UnregisterFromCanal(canal);
                 return true;
