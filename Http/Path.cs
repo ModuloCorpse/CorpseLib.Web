@@ -109,7 +109,7 @@ namespace CorpseLib.Web.Http
         /// <param name="parameterName">Name of the URL parameter to search</param>
         /// <param name="value">Container for the value of the parameter if found</param>
         /// <returns>True if it found a value to the given parameter</returns>
-        public bool TryGetParameter(string parameterName, [NotNullWhen(true)] out string? value)
+        public bool TryGetParameter(string parameterName, [MaybeNullWhen(false)] out string? value)
         {
             if (m_Data.TryGetValue(parameterName, out string? ret))
             {

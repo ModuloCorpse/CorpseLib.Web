@@ -32,7 +32,7 @@ namespace CorpseLib.Web.OAuth
             string responseJsonStr = oauthResponse.Body;
             if (string.IsNullOrWhiteSpace(responseJsonStr))
                 return;
-            JFile responseJson = new(responseJsonStr);
+            JsonObject responseJson = JsonParser.Parse(responseJsonStr);
             List<string> scope = responseJson.GetList<string>("scope");
             if (responseJson.TryGet("access_token", out string? access_token) &&
                 responseJson.TryGet("refresh_token", out string? refresh_token) &&

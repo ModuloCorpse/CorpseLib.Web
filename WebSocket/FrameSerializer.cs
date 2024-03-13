@@ -4,23 +4,23 @@ namespace CorpseLib.Web.WebSocket
 {
     public class FrameSerializer : ABytesSerializer<Frame>
     {
-        protected override OperationResult<Frame> Deserialize(BytesReader reader)
+        protected override OperationResult<Frame> Deserialize(ABytesReader reader)
         {
-            byte b = reader.ReadByte();
+            byte b = reader.Read<byte>();
             bool fin = (b & 0b10000000) != 0;
             bool rsv1 = (b & 0b01000000) != 0;
             bool rsv2 = (b & 0b00100000) != 0;
             bool rsv3 = (b & 0b00010000) != 0;
             int opCode = b & 0b00001111;
             short statusCode = 0;
-            b = reader.ReadByte();
+            b = reader.Read<byte>();
             bool useMask = (b & 0b10000000) != 0;
             long payloadLen = b & 0b01111111;
 
             if (payloadLen == 126)
-                payloadLen = reader.ReadShort(true);
+                payloadLen = reader.Read<short>();
             else if (payloadLen == 127)
-                payloadLen = reader.ReadLong(true);
+                payloadLen = reader.Read<long>();
 
             byte[] mask = (useMask) ? reader.ReadBytes(4) : [];
             byte[] buffer = reader.ReadBytes((int)payloadLen);
@@ -33,14 +33,14 @@ namespace CorpseLib.Web.WebSocket
 
             if (opCode == 8)
             {
-                statusCode = BitConverter.ToInt16(new byte[2] { buffer[1], buffer[0] });
+                statusCode = BitConverter.ToInt16([buffer[1], buffer[0]]);
                 buffer = buffer[2..];
             }
 
             return new(new(fin, rsv1, rsv2, rsv3, opCode, useMask, mask, statusCode, buffer));
         }
 
-        protected override void Serialize(Frame obj, BytesWriter writer)
+        protected override void Serialize(Frame obj, ABytesWriter writer)
         {
             byte[] bytesRaw = obj.GetContent();
 

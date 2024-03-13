@@ -1,4 +1,5 @@
 ﻿using CorpseLib.Serialize;
+using System.Text;
 
 namespace CorpseLib.Web.Http
 {
@@ -17,41 +18,44 @@ namespace CorpseLib.Web.Http
                 return new(message);
         }
 
-        protected override OperationResult<AMessage> Deserialize(BytesReader reader)
+        protected override OperationResult<AMessage> Deserialize(ABytesReader aReader)
         {
-            while (reader.StartWith("\r\n"u8.ToArray()))
-                reader.ReadBytes(2);
-            if (!reader.CanRead())
-                return new(null);
-            if (m_ChunkedMessageBuilder.IsHoldingMessage)
-                return m_ChunkedMessageBuilder.HandleHeldMessage(reader);
-            if (m_MessageBuilder.IsHoldingMessage)
-                return m_MessageBuilder.HandleHeldMessage(reader);
-            int position = reader.IndexOf("\r\n\r\n"u8.ToArray());
-            if (position >= 0)
+            if (aReader is BytesReader reader)
             {
-                string data = reader.ReadString(position);
-                reader.ReadBytes(4);
-                if (data.StartsWith("HTTP"))
-                    return HandleMessage(new Response(data), reader);
-                else
-                    return HandleMessage(new Request(data), reader);
+                while (reader.StartWith("\r\n"u8.ToArray()))
+                    reader.ReadBytes(2);
+                if (!reader.CanRead())
+                    return new(null);
+                if (m_ChunkedMessageBuilder.IsHoldingMessage)
+                    return m_ChunkedMessageBuilder.HandleHeldMessage(reader);
+                if (m_MessageBuilder.IsHoldingMessage)
+                    return m_MessageBuilder.HandleHeldMessage(reader);
+                int position = reader.IndexOf("\r\n\r\n"u8.ToArray());
+                if (position >= 0)
+                {
+                    string data = Encoding.UTF8.GetString(reader.ReadBytes(position));
+                    reader.ReadBytes(4);
+                    if (data.StartsWith("HTTP"))
+                        return HandleMessage(new Response(data), reader);
+                    else
+                        return HandleMessage(new Request(data), reader);
+                }
             }
             return new(null);
         }
 
-        protected override void Serialize(AMessage obj, BytesWriter writer)
+        protected override void Serialize(AMessage obj, ABytesWriter writer)
         {
-            writer.Write(obj.Header);
-            writer.Write("\r\n");
+            writer.Write(Encoding.UTF8.GetBytes(obj.Header));
+            writer.Write(Encoding.UTF8.GetBytes("\r\n"));
             foreach (var field in obj.Fields)
             {
-                writer.Write(field.Key);
-                writer.Write(": ");
-                writer.Write(field.Value.ToString() ?? string.Empty);
-                writer.Write("\r\n");
+                writer.Write(Encoding.UTF8.GetBytes(field.Key));
+                writer.Write(Encoding.UTF8.GetBytes(": "));
+                writer.Write(Encoding.UTF8.GetBytes(field.Value.ToString() ?? string.Empty));
+                writer.Write(Encoding.UTF8.GetBytes("\r\n"));
             }
-            writer.Write("\r\n");
+            writer.Write(Encoding.UTF8.GetBytes("\r\n"));
             writer.Write(obj.RawBody);
         }
     }

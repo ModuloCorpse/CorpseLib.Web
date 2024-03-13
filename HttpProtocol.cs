@@ -75,7 +75,7 @@ namespace CorpseLib.Web
 
         private OperationResult<object> ReadHTTP(BytesReader reader)
         {
-            OperationResult<AMessage> message = reader.Read<AMessage>();
+            OperationResult<AMessage> message = reader.SafeRead<AMessage>();
             if (message)
             {
                 if (message.Result != null)
@@ -90,7 +90,7 @@ namespace CorpseLib.Web
             return new(message.Error, message.Description);
         }
 
-        protected override OperationResult<object> Read(BytesReader reader) => m_IsWebsocket ? reader.Read<Frame>().Cast<object>() : ReadHTTP(reader);
+        protected override OperationResult<object> Read(BytesReader reader) => m_IsWebsocket ? reader.SafeRead<Frame>().Cast<object>() : ReadHTTP(reader);
 
         private void TreatWebsocket(object packet)
         {

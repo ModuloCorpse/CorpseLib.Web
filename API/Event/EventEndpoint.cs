@@ -23,14 +23,14 @@ namespace CorpseLib.Web.API.Event
             public bool UnregisterClient(string clientID) => m_RegisteredClients.Remove(clientID);
             public bool IsRegistered(string clientID) => m_RegisteredClients.Contains(clientID);
 
-            protected void Emit(string type, JObject eventData) => m_Manager.SendEvent(m_RegisteredClients.ToArray(), type, eventData);
+            protected void Emit(string type, JsonObject eventData) => m_Manager.SendEvent(m_RegisteredClients.ToArray(), type, eventData);
         }
 
         private class EventHandler(EventEndpoint manager, string eventType) : AEventHandler(manager, eventType)
         {
             public void RegisterToCanal(Canal canal) => canal.Register(Trigger);
             public void UnregisterFromCanal(Canal canal) => canal.Unregister(Trigger);
-            public void Trigger() => Emit("event", new JObject() { { "event", EventType }, { "data", new JObject() } });
+            public void Trigger() => Emit("event", new JsonObject() { { "event", EventType }, { "data", new JsonObject() } });
         }
 
         private class EventHandler<T>(EventEndpoint manager, string eventType) : AEventHandler(manager, eventType)
@@ -41,23 +41,23 @@ namespace CorpseLib.Web.API.Event
             public void Emit(T? data)
             {
                 if (data == null)
-                    Emit("event", new JObject() { { "event", EventType }, { "data", new JObject() } });
+                    Emit("event", new JsonObject() { { "event", EventType }, { "data", new JsonObject() } });
                 else
-                    Emit("event", new JObject() { { "event", EventType }, { "data", data } });
+                    Emit("event", new JsonObject() { { "event", EventType }, { "data", data } });
             }
         }
 
-        private class JEventHandler<T>(EventEndpoint manager, string eventType) : AEventHandler(manager, eventType) where T : JNode
+        private class JEventHandler<T>(EventEndpoint manager, string eventType) : AEventHandler(manager, eventType) where T : JsonNode
         {
             public void RegisterToCanal(Canal<T> canal) => canal.Register(Emit);
             public void UnregisterFromCanal(Canal<T> canal) => canal.Unregister(Emit);
 
-            public void Emit(JNode? data)
+            public void Emit(JsonNode? data)
             {
                 if (data == null)
-                    Emit("event", new JObject() { { "event", EventType }, { "data", new JNull() } });
+                    Emit("event", new JsonObject() { { "event", EventType }, { "data", new JsonNull() } });
                 else
-                    Emit("event", new JObject() { { "event", EventType }, { "data", data } });
+                    Emit("event", new JsonObject() { { "event", EventType }, { "data", data } });
             }
         }
 
@@ -70,20 +70,20 @@ namespace CorpseLib.Web.API.Event
         public EventEndpoint(string path, bool needExactPath) : base(path, needExactPath) { }
         public EventEndpoint(Http.Path path, bool needExactPath) : base(path, needExactPath) { }
 
-        protected static void SendEvent(API.APIProtocol client, string type, JObject data)
+        protected static void SendEvent(API.APIProtocol client, string type, JsonObject data)
         {
-            client.Send(new JObject() { { "type", type }, { "data", data } }.ToNetworkString());
+            client.Send(new JsonObject() { { "type", type }, { "data", data } }.ToNetworkString());
         }
 
-        protected void SendEvent(string id, string type, JObject data)
+        protected void SendEvent(string id, string type, JsonObject data)
         {
             if (m_Clients.TryGetValue(id, out API.APIProtocol? client))
-                client.Send(new JObject() { { "type", type }, { "data", data } }.ToNetworkString());
+                client.Send(new JsonObject() { { "type", type }, { "data", data } }.ToNetworkString());
         }
 
-        protected void SendEvent(string[] ids, string type, JObject data)
+        protected void SendEvent(string[] ids, string type, JsonObject data)
         {
-            string msg = new JObject() { { "type", type }, { "data", data } }.ToNetworkString();
+            string msg = new JsonObject() { { "type", type }, { "data", data } }.ToNetworkString();
             foreach (string id in ids)
             {
                 if (m_Clients.TryGetValue(id, out API.APIProtocol? client))
@@ -161,7 +161,7 @@ namespace CorpseLib.Web.API.Event
             return false;
         }
 
-        public bool RegisterJCanal<T>(string eventType, Canal<T> canal) where T : JNode
+        public bool RegisterJCanal<T>(string eventType, Canal<T> canal) where T : JsonNode
         {
             if (!m_Events.ContainsKey(eventType))
             {
@@ -173,7 +173,7 @@ namespace CorpseLib.Web.API.Event
             return false;
         }
 
-        public bool UnregisterJCanal<T>(string eventType, Canal<T> canal) where T : JNode
+        public bool UnregisterJCanal<T>(string eventType, Canal<T> canal) where T : JsonNode
         {
             if (m_Events.TryGetValue(eventType, out AEventHandler? handler) && handler is JEventHandler<T> eventHandler)
             {

@@ -21,7 +21,7 @@ namespace CorpseLib.Web
         public URLRequest(URI url, Request.MethodType method): this(url) => m_Method = method;
         public URLRequest(URI url, Request.MethodType method, string content): this(url, method) => m_Content = content;
 
-        public URLRequest(URI url, Request.MethodType method, JObject content) : this(url, method)
+        public URLRequest(URI url, Request.MethodType method, JsonObject content) : this(url, method)
         {
             m_Content = content.ToNetworkString();
             m_RequestHeaderFields["Content-Type"] = MIME.APPLICATION.JSON.ToString();
