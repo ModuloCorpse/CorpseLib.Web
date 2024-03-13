@@ -1,5 +1,4 @@
-﻿using CorpseLib.Network;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace CorpseLib.Web.Http
