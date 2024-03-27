@@ -21,8 +21,8 @@ namespace CorpseLib.Web.API
             protected override void OnWSClose(int status, string message) => m_API.HandleWebsocketClose(m_ID);
         }
 
-        private readonly EndpointTree<AHTTPEndpoint> m_HTTPEndpointTree = new();
-        private readonly EndpointTree<AWebsocketEndpoint> m_WebsocketEndpointTree = new();
+        private readonly HTTPEndpointNode m_HTTPEndpointTree = new();
+        private readonly WebSocketEndpointNode m_WebsocketEndpointTree = new();
         private readonly Dictionary<string, AWebsocketEndpoint> m_ClientEndpoint = [];
         private readonly TCPAsyncServer m_AsyncServer;
 
@@ -46,16 +46,26 @@ namespace CorpseLib.Web.API
             {
                 HTTPEndpoint newEndpoint = new(path, true);
                 newEndpoint.SetEndpoint(methodType, methodHandler);
-                m_HTTPEndpointTree.AddEndpoint(path, newEndpoint);
+                m_HTTPEndpointTree.Add(newEndpoint);
             }
+        }
+
+        public void AddEndpointNode(Http.Path path, HTTPEndpointNode httpEndpointNode)
+        {
+            m_HTTPEndpointTree.AddNode(path, httpEndpointNode);
+        }
+
+        public void AddEndpointNode(Http.Path path, WebSocketEndpointNode webSocketEndpointNode)
+        {
+            m_WebsocketEndpointTree.AddNode(path, webSocketEndpointNode);
         }
 
         public void AddEndpoint(AEndpoint endpoint)
         {
             if (endpoint is AWebsocketEndpoint websocketEndpoint)
-                m_WebsocketEndpointTree.AddEndpoint(endpoint.Path, websocketEndpoint);
+                m_WebsocketEndpointTree.Add(websocketEndpoint);
             else if (endpoint is AHTTPEndpoint httpEndpoint)
-                m_HTTPEndpointTree.AddEndpoint(endpoint.Path, httpEndpoint);
+                m_HTTPEndpointTree.Add(httpEndpoint);
         }
 
         internal Response HandleAPIRequest(Request request)
@@ -95,5 +105,8 @@ namespace CorpseLib.Web.API
                 endpoint.ClientUnregistered(id);
             m_ClientEndpoint.Remove(id);
         }
+
+        public List<KeyValuePair<Http.Path, AHTTPEndpoint>> FlattenHTTP() => m_HTTPEndpointTree.Flatten(new());
+        public List<KeyValuePair<Http.Path, AWebsocketEndpoint>> FlattenWebsocket() => m_WebsocketEndpointTree.Flatten(new());
     }
 }

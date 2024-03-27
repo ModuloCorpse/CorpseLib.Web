@@ -75,7 +75,7 @@ namespace CorpseLib.Web.Http
 
         public Path? NextPath()
         {
-            if (m_SplittedPath.Length == 1)
+            if (m_SplittedPath.Length <= 1)
                 return null;
             return new(m_SplittedPath.Skip(1).ToArray(), m_Data);
         }
@@ -139,6 +139,27 @@ namespace CorpseLib.Web.Http
                 ++i;
             }
             return builder.ToString();
+        }
+
+        public static Path Append(Path a, Path b)
+        {
+            string[] concatenatedPath = new string[a.m_SplittedPath.Length + b.m_SplittedPath.Length];
+            a.m_SplittedPath.CopyTo(concatenatedPath, 0);
+            b.m_SplittedPath.CopyTo(concatenatedPath, a.m_SplittedPath.Length);
+            Dictionary<string, string?> concatenatedData = [];
+            foreach (var pairA in a.m_Data)
+                concatenatedData[pairA.Key] = pairA.Value;
+            foreach (var pairB in b.m_Data)
+                concatenatedData[pairB.Key] = pairB.Value;
+            return new(concatenatedPath, concatenatedData);
+        }
+
+        public Path Append(string b)
+        {
+            string[] concatenatedPath = new string[m_SplittedPath.Length + 1];
+            m_SplittedPath.CopyTo(concatenatedPath, 0);
+            concatenatedPath[m_SplittedPath.Length] = b;
+            return new(concatenatedPath, []);
         }
     }
 }

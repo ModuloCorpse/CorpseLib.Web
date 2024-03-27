@@ -1,9 +1,14 @@
 ﻿namespace CorpseLib.Web.API
 {
-    internal class EndpointTree<TEndpoint> : PathTree<TEndpoint> where TEndpoint : AEndpoint
+    public class HTTPEndpointNode : PathTreeNode<AHTTPEndpoint>
     {
-        public void AddEndpoint(Http.Path path, TEndpoint endpoint) => AddValue(path, endpoint, endpoint.NeedExactPath);
+        public void Add(AHTTPEndpoint endpoint) => AddValue(endpoint.Path, endpoint, endpoint.NeedExactPath);
+        public AHTTPEndpoint? GetEndpoint(Http.Path path) => GetValue(path);
+    }
 
-        public TEndpoint? GetEndpoint(Http.Path path) => GetValue(path);
+    public class WebSocketEndpointNode : PathTreeNode<AWebsocketEndpoint>
+    {
+        public void Add(AWebsocketEndpoint endpoint) => AddValue(endpoint.Path, endpoint, endpoint.NeedExactPath);
+        public AWebsocketEndpoint? GetEndpoint(Http.Path path) => GetValue(path);
     }
 }
