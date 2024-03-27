@@ -34,6 +34,7 @@
             {
                 m_Value = value;
                 m_NeedExactPath = needExactPath;
+                return;
             }
             Http.Path? nextPath = path.NextPath();
             if (nextPath == null)

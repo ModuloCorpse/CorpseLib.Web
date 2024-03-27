@@ -31,6 +31,13 @@ namespace CorpseLib.Web.Http
             return builder.ToString();
         }
 
+        private static string[] SplitPath(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return [];
+            return path.Split('/');
+        }
+
         private Path(string[] paths, Dictionary<string, string?> data)
         {
             m_SplittedPath = paths;
@@ -50,12 +57,12 @@ namespace CorpseLib.Web.Http
                 path = path[1..];
             int parametersIdx = path.IndexOf('?');
             if (parametersIdx < 0)
-                m_SplittedPath = path.Split('/');
+                m_SplittedPath = SplitPath(path);
             else
             {
                 string clearedPath = path[..parametersIdx];
                 if (!string.IsNullOrEmpty(clearedPath))
-                    m_SplittedPath = clearedPath.Split('/');
+                    m_SplittedPath = SplitPath(clearedPath);
                 else
                     m_SplittedPath = [];
                 string parameterLine = path[(parametersIdx + 1)..];
