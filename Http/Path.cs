@@ -128,9 +128,10 @@ namespace CorpseLib.Web.Http
 
         public override string ToString()
         {
+            string fullpath = (string.IsNullOrEmpty(m_FullPath)) ? "/" : m_FullPath;
             if (m_Data.Count == 0)
-                return m_FullPath;
-            StringBuilder builder = new(m_FullPath);
+                return fullpath;
+            StringBuilder builder = new(fullpath);
             builder.Append('?');
             uint i = 0;
             foreach (KeyValuePair<string, string?> data in m_Data)
