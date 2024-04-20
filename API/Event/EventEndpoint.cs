@@ -1,36 +1,31 @@
-﻿using CorpseLib.Json;
+﻿using CorpseLib.DataNotation;
+using CorpseLib.Json;
 using System.Collections.Concurrent;
 
 namespace CorpseLib.Web.API.Event
 {
     public class EventEndpoint : AWebsocketEndpoint
     {
-        private abstract class AEventHandler
+        private abstract class AEventHandler(EventEndpoint manager, string eventType)
         {
-            private readonly EventEndpoint m_Manager;
+            private readonly EventEndpoint m_Manager = manager;
             private readonly HashSet<string> m_RegisteredClients = [];
-            private readonly string m_EventType;
+            private readonly string m_EventType = eventType;
 
             public string EventType => m_EventType;
-
-            protected AEventHandler(EventEndpoint manager, string eventType)
-            {
-                m_Manager = manager;
-                m_EventType = eventType;
-            }
 
             public bool RegisterClient(string clientID) => m_RegisteredClients.Add(clientID);
             public bool UnregisterClient(string clientID) => m_RegisteredClients.Remove(clientID);
             public bool IsRegistered(string clientID) => m_RegisteredClients.Contains(clientID);
 
-            protected void Emit(string type, JsonObject eventData) => m_Manager.SendEvent(m_RegisteredClients.ToArray(), type, eventData);
+            protected void Emit(string type, DataObject eventData) => m_Manager.SendEvent(m_RegisteredClients.ToArray(), type, eventData);
         }
 
         private class EventHandler(EventEndpoint manager, string eventType) : AEventHandler(manager, eventType)
         {
             public void RegisterToCanal(Canal canal) => canal.Register(Trigger);
             public void UnregisterFromCanal(Canal canal) => canal.Unregister(Trigger);
-            public void Trigger() => Emit("event", new JsonObject() { { "event", EventType }, { "data", new JsonObject() } });
+            public void Trigger() => Emit("event", new DataObject() { { "event", EventType }, { "data", new DataObject() } });
         }
 
         private class EventHandler<T>(EventEndpoint manager, string eventType) : AEventHandler(manager, eventType)
@@ -41,23 +36,23 @@ namespace CorpseLib.Web.API.Event
             public void Emit(T? data)
             {
                 if (data == null)
-                    Emit("event", new JsonObject() { { "event", EventType }, { "data", new JsonObject() } });
+                    Emit("event", new DataObject() { { "event", EventType }, { "data", new DataObject() } });
                 else
-                    Emit("event", new JsonObject() { { "event", EventType }, { "data", data } });
+                    Emit("event", new DataObject() { { "event", EventType }, { "data", data } });
             }
         }
 
-        private class JEventHandler<T>(EventEndpoint manager, string eventType) : AEventHandler(manager, eventType) where T : JsonNode
+        private class JEventHandler<T>(EventEndpoint manager, string eventType) : AEventHandler(manager, eventType) where T : DataNode
         {
             public void RegisterToCanal(Canal<T> canal) => canal.Register(Emit);
             public void UnregisterFromCanal(Canal<T> canal) => canal.Unregister(Emit);
 
-            public void Emit(JsonNode? data)
+            public void Emit(DataNode? data)
             {
                 if (data == null)
-                    Emit("event", new JsonObject() { { "event", EventType }, { "data", new JsonNull() } });
+                    Emit("event", new DataObject() { { "event", EventType }, { "data", new DataValue() } });
                 else
-                    Emit("event", new JsonObject() { { "event", EventType }, { "data", data } });
+                    Emit("event", new DataObject() { { "event", EventType }, { "data", data } });
             }
         }
 
@@ -70,20 +65,20 @@ namespace CorpseLib.Web.API.Event
         public EventEndpoint(string path, bool needExactPath) : base(path, needExactPath) { }
         public EventEndpoint(Http.Path path, bool needExactPath) : base(path, needExactPath) { }
 
-        protected static void SendEvent(API.APIProtocol client, string type, JsonObject data)
+        protected static void SendEvent(API.APIProtocol client, string type, DataObject data)
         {
-            client.Send(new JsonObject() { { "type", type }, { "data", data } }.ToNetworkString());
+            client.Send(JsonParser.NetStr(new DataObject() { { "type", type }, { "data", data } }));
         }
 
-        protected void SendEvent(string id, string type, JsonObject data)
+        protected void SendEvent(string id, string type, DataObject data)
         {
             if (m_Clients.TryGetValue(id, out API.APIProtocol? client))
-                client.Send(new JsonObject() { { "type", type }, { "data", data } }.ToNetworkString());
+                client.Send(JsonParser.NetStr(new DataObject() { { "type", type }, { "data", data } }));
         }
 
-        protected void SendEvent(string[] ids, string type, JsonObject data)
+        protected void SendEvent(string[] ids, string type, DataObject data)
         {
-            string msg = new JsonObject() { { "type", type }, { "data", data } }.ToNetworkString();
+            string msg = JsonParser.NetStr(new DataObject() { { "type", type }, { "data", data } });
             foreach (string id in ids)
             {
                 if (m_Clients.TryGetValue(id, out API.APIProtocol? client))
@@ -161,7 +156,7 @@ namespace CorpseLib.Web.API.Event
             return false;
         }
 
-        public bool RegisterJCanal<T>(string eventType, Canal<T> canal) where T : JsonNode
+        public bool RegisterJCanal<T>(string eventType, Canal<T> canal) where T : DataNode
         {
             if (!m_Events.ContainsKey(eventType))
             {
@@ -173,7 +168,7 @@ namespace CorpseLib.Web.API.Event
             return false;
         }
 
-        public bool UnregisterJCanal<T>(string eventType, Canal<T> canal) where T : JsonNode
+        public bool UnregisterJCanal<T>(string eventType, Canal<T> canal) where T : DataNode
         {
             if (m_Events.TryGetValue(eventType, out AEventHandler? handler) && handler is JEventHandler<T> eventHandler)
             {

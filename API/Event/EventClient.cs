@@ -1,4 +1,5 @@
-﻿using CorpseLib.Json;
+﻿using CorpseLib.DataNotation;
+using CorpseLib.Json;
 using CorpseLib.Network;
 
 namespace CorpseLib.Web.API.Event
@@ -11,7 +12,7 @@ namespace CorpseLib.Web.API.Event
 
             protected override void OnWSMessage(string message)
             {
-                JsonObject json = JsonParser.Parse(message);
+                DataObject json = JsonParser.Parse(message);
                 if (json.TryGet("type", out string? type))
                 {
                     switch (type)
@@ -30,7 +31,7 @@ namespace CorpseLib.Web.API.Event
                         }
                         case "event":
                         {
-                            JsonNode? node = json.Get("data");
+                            DataNode? node = json.Get("data");
                             if (node != null && json.TryGet("event", out string? @event))
                                 m_Client.Receive(@event!, node);
                             break;
@@ -40,37 +41,40 @@ namespace CorpseLib.Web.API.Event
             }
         }
 
-        public class EventArgs(string eventType, JsonNode data)
+        public class EventArgs(string eventType, DataNode data)
         {
-            private readonly JsonNode m_Data = data;
+            private readonly DataNode m_Data = data;
             private readonly string m_EventType = eventType;
 
             public string EventType => m_EventType;
-            public JsonNode Data => m_Data;
+            public DataNode Data => m_Data;
 
-            public T? GetData<T>() => m_Data.Cast<T>();
+            public T? GetData<T>()
+            {
+                DataHelper.Cast(m_Data, out T? ret);
+                return ret;
+            }
         }
 
         private interface IEventCanalWrapper
         {
-            public void Emit(JsonNode data);
+            public void Emit(DataNode data);
         }
 
         private class EventCanalWrapper(Canal canal) : IEventCanalWrapper
         {
             private readonly Canal m_Canal = canal;
 
-            public void Emit(JsonNode data) => m_Canal.Trigger();
+            public void Emit(DataNode data) => m_Canal.Trigger();
         }
 
         private class EventCanalWrapper<T>(Canal<T> canal) : IEventCanalWrapper
         {
             private readonly Canal<T> m_Canal = canal;
 
-            public void Emit(JsonNode data)
+            public void Emit(DataNode data)
             {
-                T? @event = data.Cast<T>();
-                if (@event != null)
+                if (DataHelper.Cast(data, out T? @event) && @event != null)
                     m_Canal.Emit(@event);
             }
         }
@@ -96,8 +100,8 @@ namespace CorpseLib.Web.API.Event
 
         protected override void OnWSMessage(string message)
         {
-            JsonObject json = JsonParser.Parse(message);
-            if (json.TryGet("type", out string? type) && json.TryGet("data", out JsonObject? data))
+            DataObject json = JsonParser.Parse(message);
+            if (json.TryGet("type", out string? type) && json.TryGet("data", out DataObject? data))
             {
                 switch (type)
                 {
@@ -121,7 +125,7 @@ namespace CorpseLib.Web.API.Event
                     }
                     case "event":
                     {
-                        JsonNode? node = data!.Get("data");
+                        DataNode? node = data!.Get("data");
                         if (node != null && data!.TryGet("event", out string? @event))
                             Receive(@event!, node);
                         break;
@@ -130,7 +134,7 @@ namespace CorpseLib.Web.API.Event
             }
         }
 
-        internal void Receive(string eventType, JsonNode data)
+        internal void Receive(string eventType, DataNode data)
         {
             if (m_CanalManager.TryGetValue(eventType, out IEventCanalWrapper? canalWrapper))
                 canalWrapper.Emit(data);
@@ -148,13 +152,13 @@ namespace CorpseLib.Web.API.Event
         private void Subscribe(string eventType, IEventCanalWrapper wrapper)
         {
             m_AwaitingWrapper[eventType] = wrapper;
-            Send(new JsonObject() { { "request", "subscribe" }, { "event", eventType } }.ToNetworkString());
+            Send(JsonParser.NetStr(new DataObject() { { "request", "subscribe" }, { "event", eventType } }));
         }
 
         public void Subscribe(Canal canal, string eventType) => Subscribe(eventType, new EventCanalWrapper(canal));
         public void Subscribe<T>(Canal<T> canal, string eventType) => Subscribe(eventType, new EventCanalWrapper<T>(canal));
 
         private void Unsubsribed(string eventType) => m_CanalManager.Remove(eventType);
-        public void Unubscribe(string eventType) => Send(new JsonObject() { { "request", "unsubscribe" }, { "event", eventType } }.ToNetworkString());
+        public void Unubscribe(string eventType) => Send(JsonParser.NetStr(new DataObject() { { "request", "unsubscribe" }, { "event", eventType } }));
     }
 }
