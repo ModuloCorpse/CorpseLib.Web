@@ -9,9 +9,10 @@ namespace CorpseLib.Web.OAuth
     {
         public delegate void RefreshEventHandler(Token refreshedToken);
 
+        private readonly URI m_OAuthURL;
         private readonly string[] m_Scopes;
         private readonly string m_Secret;
-        private readonly URI m_OAuthURL;
+        private readonly string m_AccessTokenRequest;
         private string m_RefreshToken = string.Empty;
 
         public event RefreshEventHandler? Refreshed;
@@ -34,7 +35,17 @@ namespace CorpseLib.Web.OAuth
             m_OAuthURL = url;
             m_Scopes = scopes;
             m_Secret = secret;
-            GetAccessToken(string.Format("client_id={0}&client_secret={1}&code={2}&grant_type=authorization_code&redirect_uri={3}", ClientID, m_Secret, token, redirectURI));
+            m_AccessTokenRequest = string.Format("client_id={0}&client_secret={1}&code={2}&grant_type=authorization_code&redirect_uri={3}", ClientID, m_Secret, token, redirectURI);
+            GetAccessToken(m_AccessTokenRequest);
+        }
+
+        internal RefreshToken(URI url, string publicKey, string secret) : base(publicKey)
+        {
+            m_Scopes = [];
+            m_OAuthURL = url;
+            m_Secret = secret;
+            m_AccessTokenRequest = string.Format("client_id={0}&client_secret={1}&grant_type=client_credentials", ClientID, m_Secret);
+            GetAccessToken(m_AccessTokenRequest);
         }
 
         private bool GetAccessToken(string request)
@@ -48,11 +59,13 @@ namespace CorpseLib.Web.OAuth
             DataObject responseJson = JsonParser.Parse(responseJsonStr);
             List<string> scope = responseJson.GetList<string>("scope");
             if (responseJson.TryGet("access_token", out string? access_token) &&
-                responseJson.TryGet("refresh_token", out string? refresh_token) &&
                 responseJson.TryGet("token_type", out string? token_type) && token_type! == "bearer" &&
                 m_Scopes.All(scope.Contains) && scope.All(m_Scopes.Contains))
             {
-                m_RefreshToken = refresh_token!;
+                if (responseJson.TryGet("refresh_token", out string? refresh_token))
+                    m_RefreshToken = refresh_token!;
+                else
+                    m_RefreshToken = string.Empty;
                 SetAccessToken(access_token!);
                 return true;
             }
@@ -61,7 +74,8 @@ namespace CorpseLib.Web.OAuth
 
         public bool Refresh()
         {
-            if (GetAccessToken(string.Format("grant_type=refresh_token&refresh_token={0}&client_id={1}&client_secret={2}", m_RefreshToken, ClientID, m_Secret)))
+            if ((!string.IsNullOrWhiteSpace(m_RefreshToken) && GetAccessToken(string.Format("grant_type=refresh_token&refresh_token={0}&client_id={1}&client_secret={2}", m_RefreshToken, ClientID, m_Secret))) ||
+                GetAccessToken(m_AccessTokenRequest))
             {
                 Refreshed?.Invoke(this);
                 return true;

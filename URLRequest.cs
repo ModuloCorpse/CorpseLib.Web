@@ -8,6 +8,7 @@ namespace CorpseLib.Web
 {
     public class URLRequest
     {
+        private IMonitor? m_Monitor;
         private readonly URI m_URL;
         private readonly Dictionary<string, string> m_RequestHeaderFields = [];
         private readonly Request.MethodType m_Method = Request.MethodType.GET;
@@ -27,6 +28,8 @@ namespace CorpseLib.Web
             m_Content = JsonParser.NetStr(content);
             m_RequestHeaderFields["Content-Type"] = MIME.APPLICATION.JSON.ToString();
         }
+
+        public void SetMonitor(IMonitor monitor) => m_Monitor = monitor;
 
         public void AddHeaderField(string field, string value) => m_RequestHeaderFields[field] = value;
 
@@ -54,6 +57,8 @@ namespace CorpseLib.Web
         public Response Send(TimeSpan timeout)
         {
             TCPSyncClient client = new(new HttpProtocol(), m_URL);
+            if (m_Monitor != null)
+                client.SetMonitor(m_Monitor);
             client.SetReadTimeout((int)timeout.TotalMilliseconds);
             if (client.Connect())
             {

@@ -77,6 +77,8 @@ namespace CorpseLib.Web.OAuth
 
         public void SetPageContent(string content) => m_PageContent = content;
 
+        public OperationResult<RefreshToken> ClientCredentials() => new(new(URI.Build("https").Host(m_Host).Port(443).Path(m_TokenPath).Build(), m_PublicKey, m_PrivateKey));
+
         public OperationResult<RefreshToken> AuthorizationCode(string browser = "")
         {
             m_TokenOperation = new();
