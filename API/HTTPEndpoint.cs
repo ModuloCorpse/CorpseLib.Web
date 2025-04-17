@@ -43,6 +43,6 @@ namespace CorpseLib.Web.API
         protected override Response OnPatchRequest(Request request) => (m_Patch != null) ? m_Patch(request) : base.OnPatchRequest(request);
         protected override Response OnPostRequest(Request request) => (m_Post != null) ? m_Post(request) : base.OnPostRequest(request);
         protected override Response OnPutRequest(Request request) => (m_Put != null) ? m_Put(request) : base.OnPutRequest(request);
-        protected override Response OnTracerequest(Request request) => (m_Trace != null) ? m_Trace(request) : base.OnTracerequest(request);
+        protected override Response OnTraceRequest(Request request) => (m_Trace != null) ? m_Trace(request) : base.OnTraceRequest(request);
     }
 }

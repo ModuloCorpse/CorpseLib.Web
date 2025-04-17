@@ -21,9 +21,8 @@ namespace CorpseLib.Web.API
             protected override void OnWSClose(int status, string message) => m_API.HandleWebsocketClose(m_ID);
         }
 
-        private readonly HTTPEndpointNode m_HTTPEndpointTree = new();
-        private readonly WebSocketEndpointNode m_WebsocketEndpointTree = new();
-        private readonly Dictionary<string, AWebsocketEndpoint> m_ClientEndpoint = [];
+        private readonly EndpointTreeNode m_EndpointTreeNode = new();
+        private readonly Dictionary<string, AEndpoint> m_ClientEndpoints = [];
         private readonly TCPAsyncServer m_AsyncServer;
 
         public bool IsRunning => m_AsyncServer.IsRunning();
@@ -39,42 +38,27 @@ namespace CorpseLib.Web.API
 
         public void AddEndpoint(Http.Path path, Request.MethodType methodType, HTTPEndpoint.MethodHandler methodHandler)
         {
-            AHTTPEndpoint? endpoint = m_HTTPEndpointTree.GetEndpoint(path);
+            AEndpoint? endpoint = m_EndpointTreeNode.GetEndpoint(path);
             if (endpoint != null && endpoint is HTTPEndpoint httpEndpoint)
                 httpEndpoint.SetEndpoint(methodType, methodHandler);
             else
             {
                 HTTPEndpoint newEndpoint = new(path, true);
                 newEndpoint.SetEndpoint(methodType, methodHandler);
-                m_HTTPEndpointTree.Add(newEndpoint);
+                m_EndpointTreeNode.Add(newEndpoint);
             }
         }
 
-        public void AddEndpointNode(Http.Path path, HTTPEndpointNode httpEndpointNode)
-        {
-            m_HTTPEndpointTree.AddNode(path, httpEndpointNode);
-        }
-
-        public void AddEndpointNode(Http.Path path, WebSocketEndpointNode webSocketEndpointNode)
-        {
-            m_WebsocketEndpointTree.AddNode(path, webSocketEndpointNode);
-        }
-
-        public void AddEndpoint(AEndpoint endpoint)
-        {
-            if (endpoint is AWebsocketEndpoint websocketEndpoint)
-                m_WebsocketEndpointTree.Add(websocketEndpoint);
-            else if (endpoint is AHTTPEndpoint httpEndpoint)
-                m_HTTPEndpointTree.Add(httpEndpoint);
-        }
+        public void AddEndpointTreeNode(Http.Path path, EndpointTreeNode endpointTree) => m_EndpointTreeNode.AddNode(path, endpointTree);
+        public void AddEndpoint(AEndpoint endpoint) => m_EndpointTreeNode.Add(endpoint);
 
         internal Response HandleAPIRequest(Request request)
         {
             try
             {
-                AHTTPEndpoint? httpEndpoint = m_HTTPEndpointTree.GetEndpoint(request.Path);
-                if (httpEndpoint != null)
-                    return httpEndpoint.OnRequest(request);
+                AEndpoint? endpoint = m_EndpointTreeNode.GetEndpoint(request.Path);
+                if (endpoint != null && endpoint.IsHTTPEndpoint)
+                    return endpoint.OnRequest(request);
                 else
                     return new(404, "Not Found", string.Format("Endpoint {0} does not exist", request.Path));
             } catch (Exception e)
@@ -85,28 +69,27 @@ namespace CorpseLib.Web.API
 
         internal void HandleWebsocketOpen(APIProtocol client, Request request)
         {
-            AWebsocketEndpoint? websocketEndpoint = m_WebsocketEndpointTree.GetEndpoint(request.Path);
-            if (websocketEndpoint != null)
+            AEndpoint? endpoint = m_EndpointTreeNode.GetEndpoint(request.Path);
+            if (endpoint != null && endpoint.IsWebsocketEndpoint)
             {
-                websocketEndpoint.RegisterClient(client, request.Path);
-                m_ClientEndpoint[client.ID] = websocketEndpoint;
+                endpoint.RegisterClient(client, request.Path);
+                m_ClientEndpoints[client.ID] = endpoint;
             }
         }
 
         internal void HandleWebsocketMessage(string id, string message)
         {
-            if (m_ClientEndpoint.TryGetValue(id, out AWebsocketEndpoint? endpoint))
+            if (m_ClientEndpoints.TryGetValue(id, out AEndpoint? endpoint))
                 endpoint.ClientMessage(id, message);
         }
 
         internal void HandleWebsocketClose(string id)
         {
-            if (m_ClientEndpoint.TryGetValue(id, out AWebsocketEndpoint? endpoint))
+            if (m_ClientEndpoints.TryGetValue(id, out AEndpoint? endpoint))
                 endpoint.ClientUnregistered(id);
-            m_ClientEndpoint.Remove(id);
+            m_ClientEndpoints.Remove(id);
         }
 
-        public List<KeyValuePair<Http.Path, AHTTPEndpoint>> FlattenHTTP() => m_HTTPEndpointTree.Flatten(new());
-        public List<KeyValuePair<Http.Path, AWebsocketEndpoint>> FlattenWebsocket() => m_WebsocketEndpointTree.Flatten(new());
+        public List<KeyValuePair<Http.Path, AEndpoint>> FlattenEndpoints() => m_EndpointTreeNode.Flatten(new());
     }
 }

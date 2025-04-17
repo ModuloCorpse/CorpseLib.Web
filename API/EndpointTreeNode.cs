@@ -1,34 +1,34 @@
 ﻿namespace CorpseLib.Web.API
 {
-    public class PathTreeNode<TValue>
+    public class EndpointTreeNode
     {
-        private readonly Dictionary<string, PathTreeNode<TValue>> m_Children = [];
-        private TValue? m_Value;
+        private readonly Dictionary<string, EndpointTreeNode> m_Children = [];
+        private AEndpoint? m_Value;
         private bool m_NeedExactPath = true;
 
-        public PathTreeNode() { }
-        private PathTreeNode(TValue value, bool needExactPath)
+        public EndpointTreeNode() { }
+        private EndpointTreeNode(AEndpoint value, bool needExactPath)
         {
             m_Value = value;
             m_NeedExactPath = needExactPath;
         }
 
-        public void AddNode(Http.Path path, PathTreeNode<TValue> node)
+        public void AddNode(Http.Path path, EndpointTreeNode node)
         {
             Http.Path? nextPath = path.NextPath();
             if (nextPath == null)
                 m_Children[path.CurrentPath] = node;
-            else if (m_Children.TryGetValue(path.CurrentPath, out PathTreeNode<TValue>? childNode))
+            else if (m_Children.TryGetValue(path.CurrentPath, out EndpointTreeNode? childNode))
                 childNode.AddNode(nextPath, node);
             else
             {
-                PathTreeNode<TValue> newNode = new();
+                EndpointTreeNode newNode = new();
                 newNode.AddNode(nextPath, node);
                 m_Children[path.CurrentPath] = newNode;
             }
         }
 
-        public void AddValue(Http.Path path, TValue value, bool needExactPath)
+        public void AddValue(Http.Path path, AEndpoint value, bool needExactPath)
         {
             if (path.Paths.Length == 0)
             {
@@ -39,44 +39,53 @@
             Http.Path? nextPath = path.NextPath();
             if (nextPath == null)
                 m_Children[path.CurrentPath] = new(value, needExactPath);
-            else if (m_Children.TryGetValue(path.CurrentPath, out PathTreeNode<TValue>? node))
+            else if (m_Children.TryGetValue(path.CurrentPath, out EndpointTreeNode? node))
                 node.AddValue(nextPath, value, needExactPath);
             else
             {
-                PathTreeNode<TValue> newNode = new();
+                EndpointTreeNode newNode = new();
                 newNode.AddValue(nextPath, value, needExactPath);
                 m_Children[path.CurrentPath] = newNode;
             }
         }
 
-        public TValue? GetValue(Http.Path path)
+        public AEndpoint? GeAEndpoint(Http.Path path)
         {
-            TValue? ret = default;
+            AEndpoint? ret = default;
             Http.Path? nextPath = path.NextPath();
-            if (m_Children.TryGetValue(path.CurrentPath, out PathTreeNode<TValue>? node))
+            if (m_Children.TryGetValue(path.CurrentPath, out EndpointTreeNode? node))
             {
                 if (nextPath == null)
                     ret = node.m_Value;
                 else
-                    ret = node.GetValue(nextPath);
+                    ret = node.GeAEndpoint(nextPath);
             }
             if (ret == null && !m_NeedExactPath)
                 ret = m_Value;
             return ret;
         }
 
-        public List<KeyValuePair<Http.Path, TValue>> Flatten(Http.Path root)
+        public List<KeyValuePair<Http.Path, AEndpoint>> Flatten(Http.Path root)
         {
-            List<KeyValuePair<Http.Path, TValue>> list = [];
+            List<KeyValuePair<Http.Path, AEndpoint>> list = [];
             if (m_Value != null)
                 list.Add(new(root, m_Value));
             foreach (var pair in m_Children)
             {
-                PathTreeNode<TValue> child = pair.Value;
+                EndpointTreeNode child = pair.Value;
                 Http.Path childPath = root.Append(pair.Key);
                 list.AddRange(child.Flatten(childPath));
             }
             return list;
         }
+
+        public void Add(AEndpoint[] endpoints)
+        {
+            foreach (AEndpoint endpoint in endpoints)
+                AddValue(endpoint.Path, endpoint, endpoint.NeedExactPath);
+        }
+
+        public void Add(AEndpoint endpoint) => AddValue(endpoint.Path, endpoint, endpoint.NeedExactPath);
+        public AEndpoint? GetEndpoint(Http.Path path) => GeAEndpoint(path);
     }
 }

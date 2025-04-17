@@ -14,13 +14,13 @@ namespace CorpseLib.Web
         private readonly Request.MethodType m_Method = Request.MethodType.GET;
         private readonly string m_Content = string.Empty;
 
-        public URLRequest(URI url)
+        public URLRequest(URI url, Request.MethodType method)
         {
             m_URL = url;
             m_RequestHeaderFields["Host"] = url.Host;
+            m_Method = method;
         }
 
-        public URLRequest(URI url, Request.MethodType method): this(url) => m_Method = method;
         public URLRequest(URI url, Request.MethodType method, string content): this(url, method) => m_Content = content;
 
         public URLRequest(URI url, Request.MethodType method, DataObject content) : this(url, method)
