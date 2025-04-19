@@ -119,6 +119,11 @@ namespace CorpseLib.Web
             {
                 if (request.HaveHeaderField("Sec-WebSocket-Key"))
                 {
+                    if (!AllowWSOpen(request))
+                    {
+                        ForceSend(new Response(400, "Bad request"));
+                        Disconnect();
+                    }
                     Response handshakeResponse = new(101, "Switching Protocols");
                     handshakeResponse["Server"] = "Web Overlay HTTP Server";
                     handshakeResponse["Content-Type"] = "text/html";
@@ -240,6 +245,7 @@ namespace CorpseLib.Web
         protected virtual void OnHTTPResponse(Response response) { }
         protected virtual void OnWSFrameReceived(Frame frame) { }
         protected virtual void OnWSFrameSent(Frame frame) { }
+        protected virtual bool AllowWSOpen(Request message) => true;
         protected virtual void OnWSOpen(Request message) { }
         protected virtual void OnWSOpen(Response message) { }
         protected virtual void OnWSClose(int status, string message) { }

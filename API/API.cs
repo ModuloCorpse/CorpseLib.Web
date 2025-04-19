@@ -9,15 +9,11 @@ namespace CorpseLib.Web.API
         {
             private readonly API m_API = api;
             private readonly string m_ID = id;
-
             public string ID => m_ID;
-
             protected override void OnHTTPRequest(Request request) => Send(m_API.HandleAPIRequest(request));
-
+            protected override bool AllowWSOpen(Request request) => m_API.CanOpenWebsocket(request);
             protected override void OnWSOpen(Request request) => m_API.HandleWebsocketOpen(this, request);
-
             protected override void OnWSMessage(string message) => m_API.HandleWebsocketMessage(m_ID, message);
-
             protected override void OnWSClose(int status, string message) => m_API.HandleWebsocketClose(m_ID);
         }
 
@@ -58,13 +54,19 @@ namespace CorpseLib.Web.API
             {
                 AEndpoint? endpoint = m_EndpointTreeNode.GetEndpoint(request.Path);
                 if (endpoint != null && endpoint.IsHTTPEndpoint)
-                    return endpoint.OnRequest(request);
+                    return endpoint.HandleRequest(request);
                 else
                     return new(404, "Not Found", string.Format("Endpoint {0} does not exist", request.Path));
             } catch (Exception e)
             {
                 return new(500, "Internal Server Error", string.Format("API caught exception: {0}", e.Message));
             }
+        }
+
+        internal bool CanOpenWebsocket(Request request)
+        {
+            AEndpoint? endpoint = m_EndpointTreeNode.GetEndpoint(request.Path);
+            return (endpoint != null && endpoint.IsWebsocketEndpoint);
         }
 
         internal void HandleWebsocketOpen(APIProtocol client, Request request)
@@ -74,6 +76,12 @@ namespace CorpseLib.Web.API
             {
                 endpoint.RegisterClient(client, request.Path);
                 m_ClientEndpoints[client.ID] = endpoint;
+            }
+            else
+            {
+                client.Send(new Response(400, "Bad Request", "Not a websocket"));
+                client.Disconnect();
+                return;
             }
         }
 

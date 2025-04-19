@@ -19,7 +19,9 @@ namespace CorpseLib.Web.API
         protected AEndpoint(string path, bool needExactPath, bool isHTTPEndpoint, bool isWebsocketEndpoint) : this(new Http.Path(path), needExactPath, isHTTPEndpoint, isWebsocketEndpoint) { }
 
         //HTTP
-        internal Response OnRequest(Request request) => request.Method switch
+        internal Response HandleRequest(Request request) => OnRequest(request);
+
+        protected virtual Response OnRequest(Request request) => request.Method switch
         {
             Request.MethodType.GET => OnGetRequest(request),
             Request.MethodType.HEAD => OnHeadRequest(request),

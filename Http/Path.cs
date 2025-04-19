@@ -149,6 +149,16 @@ namespace CorpseLib.Web.Http
             return builder.ToString();
         }
 
+        public Path Duplicate()
+        {
+            string[] duplicatedPath = new string[m_SplittedPath.Length];
+            m_SplittedPath.CopyTo(duplicatedPath, 0);
+            Dictionary<string, string?> duplicatedData = [];
+            foreach (var pairA in m_Data)
+                duplicatedData[pairA.Key] = pairA.Value;
+            return new(duplicatedPath, duplicatedData);
+        }
+
         public static Path Append(Path a, Path b)
         {
             string[] concatenatedPath = new string[a.m_SplittedPath.Length + b.m_SplittedPath.Length];

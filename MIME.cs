@@ -93,6 +93,21 @@
         }
 
         /// <summary>
+        /// Simple mime type detection based on file extension
+        /// </summary>
+        public static MIME? GetMIME(string path) => System.IO.Path.GetExtension(path).ToLower() switch
+        {
+            "html" => TEXT.HTML,
+            "js" => TEXT.JAVASCRIPT,
+            "css" => TEXT.CSS,
+            "webp" => IMAGE.WEBP,
+            "png" => IMAGE.PNG,
+            "jpg" => IMAGE.JPEG,
+            "jpeg" => IMAGE.JPEG,
+            _ => null
+        };
+
+        /// <summary>
         /// application/ type
         /// </summary>
         public static class APPLICATION
