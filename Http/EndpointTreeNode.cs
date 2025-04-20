@@ -30,6 +30,12 @@
 
         public void AddValue(Path path, TValue value, bool needExactPath)
         {
+            if (path.IsEmpty())
+            {
+                m_Value = value;
+                m_NeedExactPath = needExactPath;
+                return;
+            }
             Path? nextPath = path.NextPath();
             if (nextPath == null)
             {

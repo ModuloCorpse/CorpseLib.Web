@@ -55,6 +55,8 @@ namespace CorpseLib.Web.Http
         {
             while (path.StartsWith('/'))
                 path = path[1..];
+            while (path.EndsWith('/'))
+                path = path[..^1];
             int parametersIdx = path.IndexOf('?');
             if (parametersIdx < 0)
                 m_SplittedPath = SplitPath(path);
@@ -79,6 +81,8 @@ namespace CorpseLib.Web.Http
             
             m_FullPath = GenerateFullPath();
         }
+
+        public bool IsEmpty() => m_SplittedPath.Length == 0;
 
         public Path? NextPath()
         {
