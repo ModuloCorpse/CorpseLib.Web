@@ -28,6 +28,7 @@ namespace CorpseLib.Web.OAuth
             m_Secret = secret;
             m_OAuthURL = oauthURL;
             m_RefreshToken = refreshToken;
+            m_AccessTokenRequest = string.Empty;
         }
 
         internal RefreshToken(URI url, string[] scopes, string publicKey, string secret, string token, string redirectURI) : base(publicKey)
@@ -75,7 +76,7 @@ namespace CorpseLib.Web.OAuth
         public bool Refresh()
         {
             if ((!string.IsNullOrWhiteSpace(m_RefreshToken) && GetAccessToken(string.Format("grant_type=refresh_token&refresh_token={0}&client_id={1}&client_secret={2}", m_RefreshToken, ClientID, m_Secret))) ||
-                GetAccessToken(m_AccessTokenRequest))
+                (!string.IsNullOrWhiteSpace(m_AccessTokenRequest) && GetAccessToken(m_AccessTokenRequest)))
             {
                 Refreshed?.Invoke(this);
                 return true;

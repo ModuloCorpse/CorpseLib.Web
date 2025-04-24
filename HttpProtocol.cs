@@ -90,7 +90,24 @@ namespace CorpseLib.Web
             return new(message.Error, message.Description);
         }
 
-        protected override OperationResult<object> Read(BytesReader reader) => m_IsWebsocket ? reader.SafeRead<Frame>().Cast<object>() : ReadHTTP(reader);
+        private OperationResult<object> ReadWebsocket(BytesReader reader)
+        {
+            OperationResult<Frame> frame = reader.SafeRead<Frame>();
+            if (frame)
+            {
+                Frame? readFrame = frame.Result;
+                if (readFrame?.GetOpCode() == 9) //9 - ping message
+                {
+                    OnWSFrameReceived(readFrame);
+                    readFrame.SetOpCode(10); //10 - pong message
+                    ForceSend(readFrame);
+                    return new(null); //Returning null object as we already handled the frame
+                }
+            }
+            return frame.Cast<object>();
+        }
+
+        protected override OperationResult<object> Read(BytesReader reader) => m_IsWebsocket ? ReadWebsocket(reader) : ReadHTTP(reader);
 
         private void TreatWebsocket(object packet)
         {
@@ -104,10 +121,7 @@ namespace CorpseLib.Web
                     {
                         case 1: OnWSMessage(Encoding.UTF8.GetString(frame.GetContent())); break; //1 - text message
                         case 8: OnWSClose(frame.GetStatusCode(), Encoding.UTF8.GetString(frame.GetContent())); break; //8 - close message
-                        case 9: //9 - ping message
-                            frame.SetOpCode(10); //10 - pong message
-                            ForceSend(frame);
-                            break;
+                        case 9: break;//9 - ping message are handled at read
                     }
                 }
             }

@@ -114,6 +114,11 @@ namespace CorpseLib.Web.OAuth
             return m_TokenOperation.Result;
         }
 
+        public void StoreToken(LocalVault vault, string key, RefreshToken token)
+        {
+            vault.Store(key, string.Format("{0}\n{1}", token.AccessToken, token.TokenRefresh));
+        }
+
         public void SaveToken(string path, RefreshToken token)
         {
             string content = string.Format("{0}\n{1}", token.AccessToken, token.TokenRefresh);
@@ -136,6 +141,19 @@ namespace CorpseLib.Web.OAuth
             }
             else
                 content = File.ReadAllText(path);
+            string[] lines = content.Split('\n');
+            if (lines.Length == 2)
+            {
+                RefreshToken ret = new(m_Scopes, m_PrivateKey, URI.Build("https").Host(m_Host).Port(443).Path(m_TokenPath).Build(), lines[1], m_PublicKey, lines[0]);
+                if (ret.Refresh())
+                    return ret;
+            }
+            return null;
+        }
+
+        public RefreshToken? LoadToken(LocalVault vault, string key)
+        {
+            string content = vault.Load(key);
             string[] lines = content.Split('\n');
             if (lines.Length == 2)
             {
