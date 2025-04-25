@@ -1,8 +1,9 @@
-﻿using System.Text;
+﻿using CorpseLib.Logging;
+using System.Text;
 
 namespace CorpseLib.Web.Http
 {
-    public abstract class AMessage
+    public abstract class AMessage : ILoggable
     {
         private readonly Dictionary<string, object> m_Fields = [];
         private readonly Dictionary<string, object> m_LowerFields = [];
@@ -77,6 +78,43 @@ namespace CorpseLib.Web.Http
         {
             get => GetField(key);
             set => SetField(key, value);
+        }
+
+        /// <returns>The formatted message but obfuscate the authorization token</returns>
+        public string ToLog()
+        {
+            StringBuilder builder = new();
+            builder.Append(GetHeader());
+            builder.Append("\r\n");
+            foreach (var field in m_Fields)
+            {
+                if (field.Key == "Authorization")
+                {
+                    builder.Append(field.Key);
+                    builder.Append(": ");
+                    string fieldValueStr = field.Value.ToString() ?? string.Empty;
+                    string[] tokens = fieldValueStr.Split(' ');
+                    if (tokens.Length == 2)
+                    {
+                        builder.Append(tokens[0]);
+                        builder.Append(' ');
+                        builder.Append(new string('*', tokens[1].Length));
+                    }
+                    else
+                        builder.Append(new string('*', fieldValueStr.Length));
+                    builder.Append("\r\n");
+                }
+                else
+                {
+                    builder.Append(field.Key);
+                    builder.Append(": ");
+                    builder.Append(field.Value.ToString());
+                    builder.Append("\r\n");
+                }
+            }
+            builder.Append("\r\n");
+            builder.Append(Encoding.UTF8.GetString(m_Body));
+            return builder.ToString();
         }
 
         /// <returns>The formatted message</returns>
