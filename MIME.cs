@@ -92,10 +92,18 @@
                 return null;
         }
 
+        private static string GetExtension(string path)
+        {
+            string[] pathArray = path.Split('.');
+            if (pathArray.Length == 0)
+                return string.Empty;
+            return pathArray[^1];
+        }
+
         /// <summary>
         /// Simple mime type detection based on file extension
         /// </summary>
-        public static MIME? GetMIME(string path) => System.IO.Path.GetExtension(path).ToLower() switch
+        public static MIME? GetMIME(string path) => GetExtension(path).ToLower() switch
         {
             "html" => TEXT.HTML,
             "js" => TEXT.JAVASCRIPT,

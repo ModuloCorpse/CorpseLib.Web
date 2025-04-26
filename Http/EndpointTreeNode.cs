@@ -59,6 +59,8 @@
 
         public TValue? GetValue(Path path)
         {
+            if (path.IsEmpty())
+                return m_Value;
             TValue? ret = default;
             Path? nextPath = path.NextPath();
             if (m_Children.TryGetValue(path.CurrentPath, out PathTreeNode<TValue>? node))

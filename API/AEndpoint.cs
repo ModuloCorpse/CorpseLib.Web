@@ -46,11 +46,11 @@ namespace CorpseLib.Web.API
         protected virtual Response OnPatchRequest(Request request) => new(405, "Method Not Allowed");
 
         //Websocket
-        internal void RegisterClient(API.APIProtocol client, Http.Path path) => OnClientRegistered(client, path);
-        protected virtual void OnClientRegistered(API.APIProtocol client, Http.Path path) { }
-        internal void ClientMessage(string id, string message) => OnClientMessage(id, message);
-        protected virtual void OnClientMessage(string id, string message) { }
-        internal void ClientUnregistered(string id) => OnClientUnregistered(id);
-        protected virtual void OnClientUnregistered(string id) { }
+        internal void RegisterClient(WebsocketReference wsReference) => OnClientRegistered(wsReference);
+        protected virtual void OnClientRegistered(WebsocketReference wsReference) { }
+        internal void ClientMessage(WebsocketReference wsReference, string message) => OnClientMessage(wsReference, message);
+        protected virtual void OnClientMessage(WebsocketReference wsReference, string message) { }
+        internal void ClientUnregistered(WebsocketReference wsReference) => OnClientUnregistered(wsReference);
+        protected virtual void OnClientUnregistered(WebsocketReference wsReference) { }
     }
 }

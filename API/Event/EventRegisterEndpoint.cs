@@ -11,7 +11,7 @@ namespace CorpseLib.Web.API.Event
             string id = request.Body;
             if (!string.IsNullOrEmpty(id))
             {
-                OperationResult result = m_EventEndpoint.RegisterClient(id, request.Path.Paths[^1]);
+                OperationResult result = m_EventEndpoint.RegisterClient(id, request.Path[^1]);
                 if (result)
                     return new(200, "Ok", "Websocket registered");
                 return new(400, "Bad Request", result.Description);
