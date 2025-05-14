@@ -59,11 +59,8 @@ namespace CorpseLib.Web.API.Event
         private readonly ConcurrentDictionary<string, AEventHandler> m_Events = new();
         private readonly ConcurrentDictionary<string, WebsocketReference> m_Clients = new();
 
-        public EventEndpoint() : base("/event") { }
-        public EventEndpoint(string path) : base(path) { }
-        public EventEndpoint(Http.Path path) : base(path) { }
-        public EventEndpoint(string path, bool needExactPath) : base(path, needExactPath) { }
-        public EventEndpoint(Http.Path path, bool needExactPath) : base(path, needExactPath) { }
+        public EventEndpoint() : base() { }
+        public EventEndpoint(bool needExactPath) : base(needExactPath) { }
 
         protected void SendEvent(string id, string type, DataObject data)
         {

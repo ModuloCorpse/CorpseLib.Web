@@ -4,10 +4,8 @@ namespace CorpseLib.Web.API
 {
     public abstract class AWebsocketEndpoint : AEndpoint
     {
-        protected AWebsocketEndpoint(string path) : base(path, false, false, true) { }
-        protected AWebsocketEndpoint(Http.Path path) : base(path, false, false, true) { }
-        protected AWebsocketEndpoint(string path, bool needExactPath) : base(path, needExactPath, false, true) { }
-        protected AWebsocketEndpoint(Http.Path path, bool needExactPath) : base(path, needExactPath, false, true) { }
+        protected AWebsocketEndpoint() : base(false, false, true) { }
+        protected AWebsocketEndpoint(bool needExactPath) : base(needExactPath, false, true) { }
 
         protected sealed override Response OnGetRequest(Request request) => new(405, "Method Not Allowed");
         protected sealed override Response OnHeadRequest(Request request) => new(405, "Method Not Allowed");

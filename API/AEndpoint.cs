@@ -2,21 +2,17 @@
 
 namespace CorpseLib.Web.API
 {
-    public abstract class AEndpoint(Http.Path path, bool needExactPath, bool isHTTPEndpoint, bool isWebsocketEndpoint)
+    public abstract class AEndpoint(bool needExactPath, bool isHTTPEndpoint, bool isWebsocketEndpoint) : ResourceSystem.Resource
     {
-        private readonly Http.Path m_Path = path;
         private readonly bool m_NeedExactPath = needExactPath;
         private readonly bool m_IsHTTPEndpoint = isHTTPEndpoint;
         private readonly bool m_IsWebsocketEndpoint = isWebsocketEndpoint;
 
-        public Http.Path Path => m_Path;
         public bool NeedExactPath => m_NeedExactPath;
         public bool IsHTTPEndpoint => m_IsHTTPEndpoint;
         public bool IsWebsocketEndpoint => m_IsWebsocketEndpoint;
 
-        protected AEndpoint(string path, bool isHTTPEndpoint, bool isWebsocketEndpoint) : this(new Http.Path(path), false, isHTTPEndpoint, isWebsocketEndpoint) { }
-        protected AEndpoint(Http.Path path, bool isHTTPEndpoint, bool isWebsocketEndpoint) : this(path, false, isHTTPEndpoint, isWebsocketEndpoint) { }
-        protected AEndpoint(string path, bool needExactPath, bool isHTTPEndpoint, bool isWebsocketEndpoint) : this(new Http.Path(path), needExactPath, isHTTPEndpoint, isWebsocketEndpoint) { }
+        protected AEndpoint(bool isHTTPEndpoint, bool isWebsocketEndpoint) : this(false, isHTTPEndpoint, isWebsocketEndpoint) { }
 
         //HTTP
         internal Response HandleRequest(Request request) => OnRequest(request);

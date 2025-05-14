@@ -1,5 +1,7 @@
 ﻿using CorpseLib.Network;
 using CorpseLib.Web.Http;
+using static CorpseLib.Web.Http.ResourceSystem;
+using Path = CorpseLib.Web.Http.Path;
 
 namespace CorpseLib.Web.API
 {
@@ -17,7 +19,7 @@ namespace CorpseLib.Web.API
             protected override void OnWSClose(int status, string message) => m_API.HandleWebsocketClose(this);
         }
 
-        private readonly EndpointTreeNode m_EndpointTreeNode = new();
+        private readonly ResourceSystem m_ResourceSystem = new();
         private readonly Dictionary<string, Http.Path> m_WebsocketClientsPath = [];
         private readonly TCPAsyncServer m_AsyncServer;
 
@@ -34,27 +36,34 @@ namespace CorpseLib.Web.API
 
         public void AddEndpoint(Http.Path path, Request.MethodType methodType, HTTPEndpoint.MethodHandler methodHandler)
         {
-            AEndpoint? endpoint = m_EndpointTreeNode.GetEndpoint(path);
+            Resource? endpoint = m_ResourceSystem.Get(path);
             if (endpoint != null && endpoint is HTTPEndpoint httpEndpoint)
                 httpEndpoint.SetEndpoint(methodType, methodHandler);
             else
             {
-                HTTPEndpoint newEndpoint = new(path, true);
+                HTTPEndpoint newEndpoint = new(true);
                 newEndpoint.SetEndpoint(methodType, methodHandler);
-                m_EndpointTreeNode.Add(newEndpoint);
+                m_ResourceSystem.Add(path, newEndpoint);
             }
         }
 
-        public void AddEndpointTreeNode(Http.Path path, EndpointTreeNode endpointTree) => m_EndpointTreeNode.AddNode(path, endpointTree);
-        public void AddEndpoint(AEndpoint endpoint) => m_EndpointTreeNode.Add(endpoint);
+        public void AddDirectory(Http.Path path, ResourceSystem.Directory directory) => m_ResourceSystem.Add(path, directory);
+        public void AddEndpoint(Http.Path path, AEndpoint endpoint) => m_ResourceSystem.Add(path, endpoint);
 
         internal Response HandleAPIRequest(Request request)
         {
             try
             {
-                AEndpoint? endpoint = m_EndpointTreeNode.GetEndpoint(request.Path);
-                if (endpoint != null && endpoint.IsHTTPEndpoint)
+                Resource? resource = m_ResourceSystem.Get(request.Path);
+                if (resource != null && resource is AEndpoint endpoint && endpoint.IsHTTPEndpoint)
                     return endpoint.HandleRequest(request);
+                else if (resource != null && resource is ResourceSystem.Directory directory)
+                {
+                    Path newPath = request.Path.Append(string.Empty);
+                    Response response = new(301, "Moved Permanently");
+                    response["Location"] = newPath.ToString();
+                    return response;
+                }
                 else
                     return new(404, "Not Found", string.Format("Endpoint {0} does not exist", request.Path));
             } catch (Exception e)
@@ -65,14 +74,14 @@ namespace CorpseLib.Web.API
 
         internal bool CanOpenWebsocket(Request request)
         {
-            AEndpoint? endpoint = m_EndpointTreeNode.GetEndpoint(request.Path);
-            return (endpoint != null && endpoint.IsWebsocketEndpoint);
+            Resource? resource = m_ResourceSystem.Get(request.Path);
+            return (resource != null && resource is AEndpoint endpoint && endpoint.IsWebsocketEndpoint);
         }
 
         internal void HandleWebsocketOpen(APIProtocol client, Request request)
         {
-            AEndpoint? endpoint = m_EndpointTreeNode.GetEndpoint(request.Path);
-            if (endpoint != null && endpoint.IsWebsocketEndpoint)
+            Resource? resource = m_ResourceSystem.Get(request.Path);
+            if (resource != null && resource is AEndpoint endpoint && endpoint.IsWebsocketEndpoint)
             {
                 endpoint.RegisterClient(new(client, request.Path));
                 m_WebsocketClientsPath[client.ID] = request.Path;
@@ -89,8 +98,8 @@ namespace CorpseLib.Web.API
         {
             if (m_WebsocketClientsPath.TryGetValue(client.ID, out Http.Path? path))
             {
-                AEndpoint? endpoint = m_EndpointTreeNode.GetEndpoint(path);
-                if (endpoint != null && endpoint.IsWebsocketEndpoint)
+                Resource? resource = m_ResourceSystem.Get(path);
+                if (resource != null && resource is AEndpoint endpoint && endpoint.IsWebsocketEndpoint)
                     endpoint.ClientMessage(new(client, path), message);
             }
         }
@@ -99,13 +108,13 @@ namespace CorpseLib.Web.API
         {
             if (m_WebsocketClientsPath.TryGetValue(client.ID, out Http.Path? path))
             {
-                AEndpoint? endpoint = m_EndpointTreeNode.GetEndpoint(path);
-                if (endpoint != null && endpoint.IsWebsocketEndpoint)
+                Resource? resource = m_ResourceSystem.Get(path);
+                if (resource != null && resource is AEndpoint endpoint && endpoint.IsWebsocketEndpoint)
                     endpoint.ClientUnregistered(new(client, path));
                 m_WebsocketClientsPath.Remove(client.ID);
             }
         }
 
-        public List<KeyValuePair<Http.Path, AEndpoint>> FlattenEndpoints() => m_EndpointTreeNode.Flatten(new());
+        public List<KeyValuePair<Http.Path, Resource>> FlattenEndpoints() => m_ResourceSystem.Flatten();
     }
 }

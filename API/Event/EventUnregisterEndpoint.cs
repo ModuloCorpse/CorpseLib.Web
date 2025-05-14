@@ -2,7 +2,7 @@
 
 namespace CorpseLib.Web.API.Event
 {
-    public class EventUnregisterEndpoint(string path, EventEndpoint eventEndpoint) : AHTTPEndpoint(path, false)
+    public class EventUnregisterEndpoint(EventEndpoint eventEndpoint) : AHTTPEndpoint(false)
     {
         private readonly EventEndpoint m_EventEndpoint = eventEndpoint;
 

@@ -26,8 +26,6 @@ namespace CorpseLib.Web.Http
         {
             while (path.StartsWith('/'))
                 path = path[1..];
-            while (path.EndsWith('/'))
-                path = path[..^1];
             return path;
         }
 
@@ -200,9 +198,12 @@ namespace CorpseLib.Web.Http
 
         public static Path Append(Path a, Path b)
         {
-            string[] concatenatedPath = new string[a.m_SplittedPath.Length + b.m_SplittedPath.Length];
+            int length = a.m_SplittedPath.Length;
+            if (string.IsNullOrEmpty(a.m_SplittedPath[^1]))
+                length -= 1;
+            string[] concatenatedPath = new string[length + b.m_SplittedPath.Length];
             a.m_SplittedPath.CopyTo(concatenatedPath, 0);
-            b.m_SplittedPath.CopyTo(concatenatedPath, a.m_SplittedPath.Length);
+            b.m_SplittedPath.CopyTo(concatenatedPath, length);
             Dictionary<string, string?> concatenatedData = [];
             foreach (var pairA in a.m_Data)
                 concatenatedData[pairA.Key] = pairA.Value;
@@ -214,10 +215,13 @@ namespace CorpseLib.Web.Http
         public Path Append(string b)
         {
             b = CleanStringPath(b);
-            string[] concatenatedPath = new string[m_SplittedPath.Length + 1];
+            int length = m_SplittedPath.Length;
+            if (length > 0 && string.IsNullOrEmpty(m_SplittedPath[^1]))
+                length -= 1;
+            string[] concatenatedPath = new string[length + 1];
             m_SplittedPath.CopyTo(concatenatedPath, 0);
-            concatenatedPath[m_SplittedPath.Length] = b;
-            return new(concatenatedPath, []);
+            concatenatedPath[length] = b;
+            return new(concatenatedPath, m_Data);
         }
 
         public IEnumerator<string> GetEnumerator() => ((IEnumerable<string>)m_SplittedPath).GetEnumerator();

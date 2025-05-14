@@ -2,7 +2,7 @@
 
 namespace CorpseLib.Web.API
 {
-    public class HTTPEndpoint : AHTTPEndpoint
+    public class HTTPEndpoint(bool needExactPath) : AHTTPEndpoint(needExactPath)
     {
         public delegate Response MethodHandler(Request request);
 
@@ -15,9 +15,6 @@ namespace CorpseLib.Web.API
         private MethodHandler? m_Post = null;
         private MethodHandler? m_Put = null;
         private MethodHandler? m_Trace = null;
-
-        public HTTPEndpoint(Http.Path path) : base(path) { }
-        public HTTPEndpoint(Http.Path path, bool needExactPath) : base(path, needExactPath) { }
 
         public void SetEndpoint(Request.MethodType methodType, MethodHandler methodHandler)
         {
