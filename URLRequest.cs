@@ -3,6 +3,7 @@ using CorpseLib.Json;
 using CorpseLib.Network;
 using CorpseLib.Web.Http;
 using CorpseLib.Web.OAuth;
+using System.Net.Sockets;
 
 namespace CorpseLib.Web
 {
@@ -64,19 +65,26 @@ namespace CorpseLib.Web
             {
                 client.Send(Request);
                 DateTime requestTime = DateTime.Now;
-                List<object> packets;
-                do
+                List<object> packets = [];
+                while (packets.Count == 0)
                 {
                     packets = client.Read();
-                    foreach (object packet in packets)
+                    if (packets.Count == 0)
                     {
-                        if (packet is Response response)
-                            return response;
+                        TimeSpan timeSinceRequestSent = DateTime.Now - requestTime;
+                        if (timeSinceRequestSent > timeout)
+                            return new(530, "Site is frozen", "No packet received, maybe the server is freezed ?");
                     }
-                    TimeSpan timeSinceRequestSent = DateTime.Now - requestTime;
-                    if (timeSinceRequestSent > timeout)
-                        return new(530, "Site is frozen", "No packet received, maybe the server is freezed ?");
-                } while (packets.Count == 0);
+                    else if (packets.Count == 1)
+                    {
+                        if (packets[0] is Response response)
+                            return response;
+                        else
+                            return new(500, "Internal Server Error", "Server didn't respond a valid HTTP Response");
+                    }
+                    else
+                        return new(500, "Internal Server Error", "Server send multiple response");
+                }
             }
             return new(503, "Service Unavailable", "Cannot connect to the server");
         }
