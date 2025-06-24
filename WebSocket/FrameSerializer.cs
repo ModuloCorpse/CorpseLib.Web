@@ -25,7 +25,7 @@ namespace CorpseLib.Web.WebSocket
             byte[] mask = (useMask) ? reader.ReadBytes(4) : [];
             byte[] buffer = reader.ReadBytes((int)payloadLen);
             if (buffer.Length != payloadLen)
-                return new("Not enough bytes", string.Format("Payload expected {0} bytes but {1} where read", payloadLen, buffer.Length));
+                return new("Not enough bytes", $"Payload expected {payloadLen} bytes but {buffer.Length} where read");
 
             if (useMask)
             {

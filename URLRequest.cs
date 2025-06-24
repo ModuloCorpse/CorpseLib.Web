@@ -38,7 +38,7 @@ namespace CorpseLib.Web
 
         public void AddRefreshToken(Token token)
         {
-            m_RequestHeaderFields["Authorization"] = string.Format("Bearer {0}", token.AccessToken);
+            m_RequestHeaderFields["Authorization"] = $"Bearer {token.AccessToken}";
             m_RequestHeaderFields["Client-Id"] = token.ClientID;
         }
 

@@ -90,15 +90,15 @@ namespace CorpseLib.Web.Http
 
         protected override string GetHeader() => m_Method switch
         {
-            MethodType.GET => string.Format("GET {0} {1}", m_Path, m_Version),
-            MethodType.HEAD => string.Format("HEAD {0} {1}", m_Path, m_Version),
-            MethodType.POST => string.Format("POST {0} {1}", m_Path, m_Version),
-            MethodType.PUT => string.Format("PUT {0} {1}", m_Path, m_Version),
-            MethodType.DELETE => string.Format("DELETE {0} {1}", m_Path, m_Version),
-            MethodType.CONNECT => string.Format("CONNECT {0} {1}", m_Path, m_Version),
-            MethodType.OPTIONS => string.Format("OPTIONS {0} {1}", m_Path, m_Version),
-            MethodType.TRACE => string.Format("TRACE {0} {1}", m_Path, m_Version),
-            MethodType.PATCH => string.Format("PATCH {0} {1}", m_Path, m_Version),
+            MethodType.GET => $"GET {m_Path} {m_Version}",
+            MethodType.HEAD => $"HEAD {m_Path} {m_Version}",
+            MethodType.POST => $"POST {m_Path} {m_Version}",
+            MethodType.PUT => $"PUT {m_Path} {m_Version}",
+            MethodType.DELETE => $"DELETE {m_Path} {m_Version}",
+            MethodType.CONNECT => $"CONNECT {m_Path} {m_Version}",
+            MethodType.OPTIONS => $"OPTIONS {m_Path} {m_Version}",
+            MethodType.TRACE => $"TRACE {m_Path} {m_Version}",
+            MethodType.PATCH => $"PATCH {m_Path} {m_Version}",
             _ => throw new ArgumentException()
         };
         /// <summary>

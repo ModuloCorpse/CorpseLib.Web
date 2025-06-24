@@ -116,12 +116,12 @@ namespace CorpseLib.Web.OAuth
 
         public void StoreToken(LocalVault vault, string key, RefreshToken token)
         {
-            vault.Store(key, string.Format("{0}\n{1}", token.AccessToken, token.TokenRefresh));
+            vault.Store(key, $"{token.AccessToken}\n{token.TokenRefresh}");
         }
 
         public void SaveToken(string path, RefreshToken token)
         {
-            string content = string.Format("{0}\n{1}", token.AccessToken, token.TokenRefresh);
+            string content = $"{token.AccessToken}\n{token.TokenRefresh}";
             if (OperatingSystem.IsWindows())
             {
                 EncryptedFile encryptedFile = new(path) { m_WindowsEncryptionAlgorithm };

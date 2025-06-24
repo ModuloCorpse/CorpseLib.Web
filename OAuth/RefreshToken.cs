@@ -36,7 +36,7 @@ namespace CorpseLib.Web.OAuth
             m_OAuthURL = url;
             m_Scopes = scopes;
             m_Secret = secret;
-            m_AccessTokenRequest = string.Format("client_id={0}&client_secret={1}&code={2}&grant_type=authorization_code&redirect_uri={3}", ClientID, m_Secret, token, redirectURI);
+            m_AccessTokenRequest = $"client_id={ClientID}&client_secret={m_Secret}&code={token}&grant_type=authorization_code&redirect_uri={redirectURI}";
             GetAccessToken(m_AccessTokenRequest);
         }
 
@@ -45,7 +45,7 @@ namespace CorpseLib.Web.OAuth
             m_Scopes = [];
             m_OAuthURL = url;
             m_Secret = secret;
-            m_AccessTokenRequest = string.Format("client_id={0}&client_secret={1}&grant_type=client_credentials", ClientID, m_Secret);
+            m_AccessTokenRequest = $"client_id={ClientID}&client_secret={m_Secret}&grant_type=client_credentials";
             GetAccessToken(m_AccessTokenRequest);
         }
 
@@ -75,7 +75,7 @@ namespace CorpseLib.Web.OAuth
 
         public bool Refresh()
         {
-            if ((!string.IsNullOrWhiteSpace(m_RefreshToken) && GetAccessToken(string.Format("grant_type=refresh_token&refresh_token={0}&client_id={1}&client_secret={2}", m_RefreshToken, ClientID, m_Secret))) ||
+            if ((!string.IsNullOrWhiteSpace(m_RefreshToken) && GetAccessToken($"grant_type=refresh_token&refresh_token={m_RefreshToken}&client_id={ClientID}&client_secret={m_Secret}")) ||
                 (!string.IsNullOrWhiteSpace(m_AccessTokenRequest) && GetAccessToken(m_AccessTokenRequest)))
             {
                 Refreshed?.Invoke(this);

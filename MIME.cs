@@ -63,8 +63,8 @@
         public override string ToString()
         {
             if (m_Parameter != null)
-                return string.Format("{0}/{1};{2}={3}", m_Type, m_Subtype, m_Parameter.Item1, m_Parameter.Item2);
-            return string.Format("{0}/{1}", m_Type, m_Subtype);
+                return $"{m_Type}/{m_Subtype};{m_Parameter.Item1}={m_Parameter.Item2}";
+            return $"{m_Type}/{m_Subtype}";
         }
 
         /// <summary>

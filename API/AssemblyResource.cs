@@ -47,7 +47,7 @@ namespace CorpseLib.Web.API
                     }
                 }
             }
-            return new(404, "Not Found", string.Format("{0} does not exist", request.Path));
+            return new(404, "Not Found", $"{request.Path} does not exist");
         }
     }
 }

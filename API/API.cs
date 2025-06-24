@@ -65,10 +65,10 @@ namespace CorpseLib.Web.API
                     return response;
                 }
                 else
-                    return new(404, "Not Found", string.Format("Endpoint {0} does not exist", request.Path));
+                    return new(404, "Not Found", $"Endpoint {request.Path} does not exist");
             } catch (Exception e)
             {
-                return new(500, "Internal Server Error", string.Format("API caught exception: {0}", e.Message));
+                return new(500, "Internal Server Error", $"API caught exception: {e.Message}");
             }
         }
 

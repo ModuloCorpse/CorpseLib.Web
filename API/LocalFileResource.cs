@@ -16,7 +16,7 @@ namespace CorpseLib.Web.API
                     return new Response(200, "Ok", File.ReadAllBytes(m_FilePath), mime);
                 return new Response(200, "Ok", File.ReadAllBytes(m_FilePath));
             }
-            return new(404, "Not Found", string.Format("{0} does not exist", request.Path));
+            return new(404, "Not Found", $"{request.Path} does not exist");
         }
     }
 }

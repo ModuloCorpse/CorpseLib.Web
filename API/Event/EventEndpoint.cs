@@ -104,10 +104,10 @@ namespace CorpseLib.Web.API.Event
                     return OnRegisterToUnknownEvent(id, eventType);
             }
             else
-                return new("Unknown websocket", string.Format("Websocket {0} does not exist", id));
+                return new("Unknown websocket", $"Websocket {id} does not exist");
         }
 
-        protected virtual OperationResult OnRegisterToUnknownEvent(string id, string eventType) => new("Unknown event", string.Format("Unknown event {0}", eventType));
+        protected virtual OperationResult OnRegisterToUnknownEvent(string id, string eventType) => new("Unknown event", $"Unknown event {eventType}");
 
         internal OperationResult UnregisterClient(string id, string eventType)
         {
@@ -120,7 +120,7 @@ namespace CorpseLib.Web.API.Event
                 return OnUnregisterToUnknownEvent(id, eventType);
         }
 
-        protected virtual OperationResult OnUnregisterToUnknownEvent(string id, string eventType) => new("Unknown event", string.Format("Unknown event {0}", eventType));
+        protected virtual OperationResult OnUnregisterToUnknownEvent(string id, string eventType) => new("Unknown event", $"Unknown event {eventType}");
 
         protected override void OnClientMessage(WebsocketReference wsReference, string message) { }
 

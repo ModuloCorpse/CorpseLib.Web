@@ -47,7 +47,7 @@ namespace CorpseLib.Web.Http
                 if (contentType.HaveParameter())
                     base["Content-Type"] = contentType.ToString();
                 else
-                    base["Content-Type"] = string.Format("{0}; charset=utf-8", contentType);
+                    base["Content-Type"] = $"{contentType}; charset=utf-8";
             }
         }
 
@@ -89,7 +89,7 @@ namespace CorpseLib.Web.Http
         /// <param name="statusMessage">Status message of the response</param>
         public Response(int statusCode, string statusMessage) : this(statusCode, statusMessage, Array.Empty<byte>()) { }
 
-        protected override string GetHeader() => string.Format("{0} {1} {2}", m_Version, m_StatusCode, m_StatusMessage);
+        protected override string GetHeader() => $"{m_Version} {m_StatusCode} {m_StatusMessage}";
 
         /// <summary>
         /// HTTP version of the response
