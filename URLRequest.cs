@@ -74,6 +74,8 @@ namespace CorpseLib.Web
                         TimeSpan timeSinceRequestSent = DateTime.Now - requestTime;
                         if (timeSinceRequestSent > timeout)
                             return new(530, "Site is frozen", "No packet received, maybe the server is freezed ?");
+                        else if (!client.IsConnected())
+                            return new(500, "Internal Server Error", "Server disconnected without response");
                     }
                     else if (packets.Count == 1)
                     {
